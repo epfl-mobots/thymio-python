@@ -472,7 +472,7 @@ class Connection:
                 "/dev/" + filename
                 for filename in os.listdir("/dev")
                 if filename.startswith("cu.usb")
-            ][0]
+            ]
         elif sys.platform == "win32":
             devices = ["COM8"]
         else:
