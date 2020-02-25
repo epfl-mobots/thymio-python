@@ -82,7 +82,7 @@ class Message:
     def uint16_to_bytes(word):
         """Convert an unsigned 16-bit integer to bytes.
         """
-        return bytes([word % 256, word // 256])
+        return bytes([word & 0xff, (word & 0xff00) // 256])
 
     @staticmethod
     def uint16array_to_bytes(a):
