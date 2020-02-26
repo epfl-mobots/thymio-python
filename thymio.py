@@ -391,6 +391,9 @@ class Connection:
     """Connection to one or multiple devices.
     """
 
+    class ThymioConnectionError(OSError):
+        pass
+
     def __init__(self,
                  io,
                  host_node_id=1, refreshing_rate=None, discover_rate=None,
@@ -479,9 +482,9 @@ class Connection:
         elif sys.platform == "win32":
             devices = ["COM8"]
         else:
-            raise Exception("Unsupported platform")
+            raise Connection.ThymioConnectionError("Unsupported platform")
         if len(devices) < 1:
-            raise Exception("No serial device for Thymio found")
+            raise Connection.ThymioConnectionError("No serial device for Thymio found")
         return devices[0]
 
     @staticmethod
