@@ -7,6 +7,7 @@ import time
 
 from thymio.message import Message
 
+
 class InputThread(threading.Thread):
     """Thread which reads messages asynchronously.
     """
@@ -118,7 +119,7 @@ class RemoteNode:
         if name not in self.var_offset:
             raise KeyError(name)
         offset = self.var_offset[name]
-        return self.var_data[offset : offset + self.var_size[name]]
+        return self.var_data[offset:offset + self.var_size[name]]
 
     def set_var(self, name, val, index=0):
         """Set the value of a scalar variable or an item in an array variable.
@@ -129,12 +130,12 @@ class RemoteNode:
         """Set the value of an array variable.
         """
         offset = self.var_offset[name]
-        self.var_data[offset : offset + len(val)] = val
+        self.var_data[offset:offset + len(val)] = val
 
     def set_var_data(self, offset, data):
         """Set values in the variable data array.
         """
-        self.var_data[offset : offset + len(data)] = data
+        self.var_data[offset:offset + len(data)] = data
         self.var_received = offset + len(data) >= self.expected_var_end
 
 
@@ -214,7 +215,8 @@ class Connection:
 
     @staticmethod
     def serial_default_port():
-        """Get the name of the default Thymio serial port for the current platform.
+        """Get the name of the default Thymio serial port for the current
+        platform.
         """
         import sys
         import os
@@ -263,12 +265,16 @@ class Connection:
         """Create Thymio object without connection.
         """
         import io
+
         class NullIO(io.RawIOBase):
+
             def read(self, n):
                 return None
+
             def write(self, b):
                 pass
-        return Thymio(NullIO(), host_node_id)
+
+        return Connection(NullIO(), host_node_id)
 
     def handshake(self):
         self.auto_handshake = True
@@ -328,15 +334,13 @@ class Connection:
                         remote_node.device_uuid = msg.device_uuid
                         change = True
                 elif msg.device_info == Message.DEVICE_INFO_THYMIO2_RF_SETTINGS:
-                    if (remote_node.rf_network_id != msg.network_id or
-                        remote_node.rf_node_id != msg.node_id or
-                        remote_node.rf_channel != msg.channel):
+                    if (remote_node.rf_network_id != msg.network_id
+                        or remote_node.rf_node_id != msg.node_id
+                        or remote_node.rf_channel != msg.channel):
                         remote_node.rf_network_id = msg.network_id
                         remote_node.rf_node_id = msg.node_id
                         remote_node.rf_channel = msg.channel
                         change = True
-            if change and self.on_connection_changed:
-                await self.on_connection_changed(source_node, True)
         elif msg.id == Message.ID_DESCRIPTION:
             with self.input_lock:
                 self.remote_nodes[source_node].name = msg.node_name
@@ -454,8 +458,8 @@ class Connection:
         """
         if target_node_id is not None:
             if chunk_length is None:
-                chunk_length = (self.get_target_node_var_total_size(target_node_id) -
-                    chunk_offset)
+                chunk_length = (self.get_target_node_var_total_size(target_node_id)
+                                - chunk_offset)
             payload = Message.uint16array_to_bytes([
                 target_node_id,
                 chunk_offset,
@@ -476,7 +480,8 @@ class Connection:
         self.send(msg)
 
     def variable_description(self, target_node_id):
-        """Get an array with the description of all variables, with fields "name", "offset" and "size".
+        """Get an array with the description of all variables, with fields
+        "name", "offset" and "size".
         """
         node = self.remote_nodes[target_node_id]
         return [
@@ -523,15 +528,18 @@ class Connection:
 
     def __getitem__(self, key):
         class Node:
+
             def __init__(self_node, connection, node_id):
                 self_node.connection = connection
                 self_node.node_id = node_id
+
             def __getitem__(self_node, name):
                 try:
                     val = self_node.connection.get_var_array(self_node.node_id, name)
                     return val if len(val) != 1 else val[0]
                 except KeyError:
                     raise KeyError(name)
+
             def __setitem__(self_node, name, val):
                 try:
                     if isinstance(val, list):
@@ -553,7 +561,7 @@ class Connection:
             payload = Message.uint16array_to_bytes([
                 target_node_id,
                 address + i
-            ] + bytecode[i : i + size_chunk])
+            ] + bytecode[i:i + size_chunk])
             msg = Message(Message.ID_SET_BYTECODE, self.host_node_id, payload)
             self.send(msg)
             i += size_chunk
@@ -593,51 +601,3 @@ class Connection:
             ])
             msg = Message(Message.ID_GET_DEVICE_INFO, self.host_node_id, payload)
             self.send(msg)
-
-if __name__ == "__main__":
-
-    async def on_connection_changed(node_id, connected):
-        print("Connection" if connected else "Disconnection", node_id)
-        if connected:
-            # display node information
-            remote_node = th.remote_nodes[node_id]
-            if remote_node.name:
-                print(f"Node name: {remote_node.name}")
-            if remote_node.device_name:
-                print(f"Device name: {remote_node.device_name}")
-            if remote_node.device_uuid:
-                print(f"Device uuid: {remote_node.device_uuid}")
-
-            # send bytecode for "call leds.top(32, 32, 0)" and run it
-            th.set_bytecode(node_id, [
-                3,          # vector table size
-                0xffff, 3,  # address of event 0xffff (init)
-                0x1000,     # push.s 0
-                0x426b,     # store 0x26b
-                0x126b,     # push.s 0x26b
-                0x1020,     # push.s 32
-                0x426a,     # store 0x26a
-                0x126a,     # push.s 0x26a
-                0x1020,     # push.s 32
-                0x4269,     # store 0x269
-                0x1269,     # push.s 0x269
-                0xc028,     # callnat 0x28
-                0x0000      # stop
-            ])
-            th.run(node_id)
-
-    async def on_variables_received(node_id):
-        try:
-            print(f"Node {node_id}: prox.horizontal = {th[node_id]['prox.horizontal']}")
-        except KeyError:
-            print("on_variables_received", th.remote_nodes[node_id])
-
-    with Connection.serial(discover_rate=2, refreshing_rate=0.5) as th:
-        th.on_connection_changed = on_connection_changed
-        th.on_variables_received = on_variables_received
-        try:
-            th.run_forever()
-        except KeyboardInterrupt:
-            th.shutdown()
-            th.run_forever()
-            th.close()

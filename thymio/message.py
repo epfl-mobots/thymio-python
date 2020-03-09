@@ -36,7 +36,7 @@ class Message:
     ID_BREAKPOINT_CLEAR = 0xa009
     ID_BREAKPOINT_CLEAR_ALL = 0xa00a
     ID_GET_VARIABLES = 0xa00b
-    ID_SET_VARIABLES =  0xa00c
+    ID_SET_VARIABLES = 0xa00c
     ID_GET_NODE_DESCRIPTION = 0xa010
     ID_LIST_NODES = 0xa011
     # v6
@@ -72,7 +72,7 @@ class Message:
         """Get a string in the payload.
         """
         len = self.payload[offset]
-        str = self.payload[offset + 1 : offset + 1 + len]
+        str = self.payload[offset + 1:offset + 1 + len]
         return str.decode('utf-8'), offset + 1 + len
 
     @staticmethod
@@ -85,7 +85,7 @@ class Message:
     def uint16array_to_bytes(a):
         """Convert an array of unsigned 16-bit integer to bytes.
         """
-        bytes = b"";
+        bytes = b""
         for word in a:
             bytes += Message.uint16_to_bytes(word)
         return bytes
@@ -133,7 +133,7 @@ class Message:
                 self.device_name, offset = self.get_string(offset)
             elif self.device_info == Message.DEVICE_INFO_UUID:
                 data_len, offset = self.get_uint8(offset)
-                data = self.payload[offset : offset + data_len]
+                data = self.payload[offset:offset + data_len]
                 self.device_uuid = str(uuid.UUID(bytes=data))
             elif self.device_info == Message.DEVICE_INFO_THYMIO2_RF_SETTINGS:
                 data_len, offset = self.get_uint8(offset)
@@ -146,19 +146,19 @@ class Message:
             self.bc_offset, offset = self.get_uint16(offset)
             val = []
             for i in range(4, len(self.payload), 2):
-                instr, offset = get_uint16(offset)
+                instr, offset = self.get_uint16(offset)
                 val.append(instr)
             self.bc = val
-        elif (self.id == Message.ID_BREAKPOINT_CLEAR_ALL or
-              self.id == Message.ID_RESET or
-              self.id == Message.ID_RUN or
-              self.id == Message.ID_PAUSE or
-              self.id == Message.ID_STEP or
-              self.id == Message.ID_STOP or
-              self.id == Message.ID_GET_EXECUTION_STATE):
+        elif (self.id == Message.ID_BREAKPOINT_CLEAR_ALL
+              or self.id == Message.ID_RESET
+              or self.id == Message.ID_RUN
+              or self.id == Message.ID_PAUSE
+              or self.id == Message.ID_STEP
+              or self.id == Message.ID_STOP
+              or self.id == Message.ID_GET_EXECUTION_STATE):
             self.target_node_id, offset = self.get_uint16(0)
-        elif (self.id == Message.ID_BREAKPOINT_SET or
-              self.id == Message.ID_BREAKPOINT_CLEAR):
+        elif (self.id == Message.ID_BREAKPOINT_SET
+              or self.id == Message.ID_BREAKPOINT_CLEAR):
             self.target_node_id, offset = self.get_uint16(0)
             self.pc, offset = self.get_uint16(offset)
         elif self.id == Message.ID_GET_VARIABLES:
@@ -170,7 +170,7 @@ class Message:
             self.var_offset, offset = self.get_uint16(offset)
             val = []
             for i in range(4, len(self.payload), 2):
-                v, offset = get_uint16(offset)
+                v, offset = self.get_uint16(offset)
                 val.append(v)
             self.var_val = val
         elif self.id == Message.ID_LIST_NODES:
@@ -182,10 +182,10 @@ class Message:
     def serialize(self):
         """Serialize message to bytes.
         """
-        return (self.uint16_to_bytes(len(self.payload)) +
-                self.uint16_to_bytes(self.source_node) +
-                self.uint16_to_bytes(self.id) +
-                self.payload)
+        return (self.uint16_to_bytes(len(self.payload))
+                + self.uint16_to_bytes(self.source_node)
+                + self.uint16_to_bytes(self.id)
+                + self.payload)
 
     @staticmethod
     def id_to_str(id):
