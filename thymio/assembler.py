@@ -288,12 +288,13 @@ class Assembler:
         defs = self.node_definitions()
 
         re_blank = re.compile(r"^\s*(;.*)?$")
-        re_label = re.compile(r"^\s*(\w+:)\s*(;.*)?$")
-        re_instr = re.compile(r"^\s*(\w+:)?\s*([a-z0-9.]+)([-a-z0-9\s.,+=]*)(;.*)?$")
+        re_label = re.compile(r"^\s*([\w_.]+:)\s*(;.*)?$")
+        re_instr = re.compile(r"^\s*([\w_.]+:)?\s*([a-z0-9.]+)([-a-z0-9\s._,+=]*)(;.*)?$")
         re_number = re.compile(r"^(-?[0-9]+|0x[0-9a-fA-F]+)$")
 
         for phase in (0, 1):
             bytecode = []
+            label = None
             for i, line in enumerate(lines):
                 if re_blank.match(line):
                     # blank or comment (ignore)
@@ -304,12 +305,12 @@ class Assembler:
                     # label without instr
                     label = r[1][0:-1]
                     defs[label] = len(bytecode)
+                    continue
 
                 r = re_instr.match(line)
                 if r:
-                    label = r[1]
-                    if label:
-                        label = label[0:-1]
+                    if r[1]:
+                        label = r[1][0:-1]
                         defs[label] = len(bytecode)
                     instr_name = r[2]
                     instr_args = r[3].strip()
@@ -324,7 +325,7 @@ class Assembler:
                             args_split = []
 
                     if instr_name not in self.instr:
-                        raise Exception(f"Unknown instruction {instr_name}")
+                        raise Exception(f"Unknown instruction {instr_name} (line {i+1})")
                     instr = self.instr[instr_name]
                     if "code" in instr:
                         bytecode += instr["code"]
@@ -334,125 +335,26 @@ class Assembler:
                             for a in args_split
                         ]
                         bytecode += instr["to_code"](len(bytecode), args, label, defs if phase == 1 else None, i + 1)
+                    if label is not None and defs[label] != len(bytecode):
+                        label = None
+                    continue
+
+                raise Exception(f"Syntax error (line {i+1})")
 
         return bytecode
 
 def test():
     import thymio
     remote_node = thymio.connection.RemoteNode()
-    src = """
-    dc 7
+    src = """foo:
+    equ 5
+
+    dc end_toc
     dc 0xffff, init
-    dc 0xfff9, button
-    dc 0xffee, timer
+end_toc:
 
 init:
-    push.s 0
-    store 111
-    push.s 0
-    store 112
-    push.s 0
-    store 108
-    push.s 0
-    store 109
-    push.s 0
-    store 110
-    push.s 0
-    store 619
-    push.s 619
-    push.s 0
-    store 618
-    push.s 618
-    push.s 0
-    store 617
-    push.s 617
-    callnat 31
-    push.s 0
-    store 619
-    push.s 619
-    push.s 0
-    store 618
-    push.s 618
-    push.s 0
-    store 617
-    push.s 617
-    callnat 32
-    push.s 0
-    store 619
-    push.s 619
-    push.s 0
-    store 618
-    push.s 618
-    push.s 0
-    store 617
-    push.s 617
-    callnat 33
-    push.s 0
-    store 619
-    push.s 619
-    push.s 0
-    store 618
-    push.s 618
-    push.s 0
-    store 617
-    push.s 617
-    push.s 0
-    store 616
-    push.s 616
-    push.s 0
-    store 615
-    push.s 615
-    push.s 0
-    store 614
-    push.s 614
-    push.s 0
-    store 613
-    push.s 613
-    push.s 0
-    store 612
-    push.s 612
-    callnat 30
-    push.s 50
-    store 106
-    stop
-
-button:
-    load 44
-    push.s 0
-    do.jump.when.not ne 81
-    push.s 1
-    store 111
-    stop
-
-timer:
-    load 111
-    push.s 0
-    jump.if.not ne 88
-    push.s 1
-    store 112
-    load 112
-    push.s 0
-    jump.if.not ne 108
-    push.s 0
-    store 619
-    push.s 619
-    push.s 0
-    store 618
-    push.s 618
-    push.s 0
-    store 617
-    push.s 617
-    callnat 31
-    push.s 0
-    store 108
-    push.s 0
-    store 109
-    push.s 0
-    store 110
-    push.s 0
-    store 111
-    push.s 0
-    store 112
+    push foo
     stop
 """
     a = Assembler(remote_node, src)
