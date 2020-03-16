@@ -251,12 +251,24 @@ class Connection:
         return th
 
     @staticmethod
-    def tcp(host="127.0.0.1", port=3000, **kwargs):
+    def tcp(host="127.0.0.1", port=33333, **kwargs):
         """Create Thymio object with a TCP connection.
         """
-        import socket
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((host, port))
+        import socket, io
+
+        class TCPClientIO(io.RawIOBase):
+
+            def __init__(self, host, port):
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.socket.connect((host, port))
+
+            def read(self, n):
+                return self.socket.recv(n)
+            
+            def write(self, b):
+                self.socket.sendall(b)
+
+        s = TCPClientIO(host, port)
         th = Connection(s, **kwargs)
         return th
 
