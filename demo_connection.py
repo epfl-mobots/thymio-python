@@ -2,6 +2,7 @@
 # Author: Yves Piguet, EPFL
 
 import thymio
+import serial
 
 if __name__ == "__main__":
 
@@ -41,7 +42,7 @@ if __name__ == "__main__":
         except KeyError:
             print("on_variables_received", th.remote_nodes[node_id])
 
-    with thymio.Connection.serial(discover_rate=2, refreshing_rate=0.5) as th:
+    def run_demo(th):
         th.on_connection_changed = on_connection_changed
         th.on_variables_received = on_variables_received
         try:
@@ -50,3 +51,13 @@ if __name__ == "__main__":
             th.shutdown()
             th.run_forever()
             th.close()
+
+
+    try:
+        # try to open serial connection
+        with thymio.Connection.serial(discover_rate=2, refreshing_rate=0.5) as th:
+            run_demo(th)
+    except serial.serialutil.SerialException:
+        # cannot open serial connection; try TCP on default local port
+        with thymio.Connection.tcp(discover_rate=2, refreshing_rate=0.5) as th:
+            run_demo(th)
