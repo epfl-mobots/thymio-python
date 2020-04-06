@@ -273,8 +273,13 @@ class Assembler:
 
         defs = {}
 
+        # variables
         for name in self.remote_node.named_variables:
             defs[name] = self.remote_node.var_offset[name]
+        defs["_userdata"] = self.remote_node.var_total_size
+        defs["_topdata"] = self.remote_node.max_var_size
+
+        # native functions
         for i in range(len(self.remote_node.native_functions)):
             defs["_nf." + self.remote_node.native_functions[i]] = i
 
