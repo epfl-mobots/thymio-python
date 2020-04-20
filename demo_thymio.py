@@ -15,6 +15,8 @@ if __name__ == "__main__":
     id = th.first_node()
     print(f"id: {id}")
     print(f"variables: {th.variables(id)}")
+    print(f"events: {th.variables(id)}")
+    print(f"native functions: {th.native_functions(id)[0]}")
 
     # get a variable
     th[id]["prox.horizontal"]

@@ -123,3 +123,18 @@ class Thymio:
 
     def set_variable_observer(self, node_id, observer):
         self.variable_observers[node_id] = observer
+
+    def events(self, node_id):
+        """Get list of event names.
+        """
+        node = self.thymio_proxy.connection.remote_nodes[node_id]
+        return node.local_events
+
+    def native_functions(self, node_id):
+        """Get list of native function names and list of corresponding arg sizes.
+        """
+        node = self.thymio_proxy.connection.remote_nodes[node_id]
+        return (
+            node.native_functions,
+            [node.native_functions_arg_sizes[f] for f in node.native_functions]
+        )
