@@ -279,6 +279,11 @@ class Assembler:
         defs["_userdata"] = self.remote_node.var_total_size
         defs["_topdata"] = self.remote_node.max_var_size
 
+        # local events
+        defs["_ev.init"] = 0xffff
+        for i in range(len(self.remote_node.local_events)):
+            defs["_ev." + self.remote_node.local_events[i]] = 0xfffe - i
+
         # native functions
         for i in range(len(self.remote_node.native_functions)):
             defs["_nf." + self.remote_node.native_functions[i]] = i
@@ -348,14 +353,16 @@ class Assembler:
 
         return bytecode
 
-def test():
+def test(remote_node=None):
     import thymio
-    remote_node = thymio.connection.RemoteNode()
+    if remote_node is None:
+        remote_node = thymio.connection.RemoteNode()
+
     src = """foo:
     equ 5
 
     dc end_toc
-    dc 0xffff, init
+    dc _ev.init, init
 end_toc:
 
 init:
