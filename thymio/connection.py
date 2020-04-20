@@ -214,9 +214,8 @@ class Connection:
         self.close()
 
     @staticmethod
-    def serial_default_port():
-        """Get the name of the default Thymio serial port for the current
-        platform.
+    def serial_ports():
+        """Get the list of serial ports for the current platform.
         """
         import sys
         import os
@@ -233,12 +232,30 @@ class Connection:
                 if filename.startswith("cu.usb")
             ]
         elif sys.platform == "win32":
-            devices = ["COM8"]
+            import subprocess, re
+            mode_output = subprocess.check_output("mode", shell=True).decode()
+            devices = [
+                re.search(r"(COM\d+):", line).groups()[0]
+                for line in mode_output.split("\n")
+                if re.search(r"(COM\d+):", line)
+            ]
         else:
             raise Connection.ThymioConnectionError("Unsupported platform")
+        return devices
+
+    @staticmethod
+    def serial_default_port():
+        """Get the name of the default Thymio serial port for the current
+        platform.
+        """
+        import sys
+        devices = Connection.serial_ports()
         if len(devices) < 1:
             raise Connection.ThymioConnectionError("No serial device for Thymio found")
-        return devices[0]
+        if sys.platform == "win32":
+            return devices[len(devices) - 1]
+        else:
+            return devices[0]
 
     @staticmethod
     def serial(port=None, **kwargs):
@@ -264,7 +281,7 @@ class Connection:
 
             def read(self, n):
                 return self.socket.recv(n)
-            
+
             def write(self, b):
                 self.socket.sendall(b)
 
