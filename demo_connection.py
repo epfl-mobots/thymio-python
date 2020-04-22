@@ -3,6 +3,7 @@
 
 import thymio
 import serial
+import sys
 
 if __name__ == "__main__":
 
@@ -53,11 +54,17 @@ if __name__ == "__main__":
             th.close()
 
 
+    use_tcp = len(sys.argv) > 1 and sys.argv[1] == "--tcp"
+
     try:
-        # try to open serial connection
-        with thymio.Connection.serial(discover_rate=2, refreshing_rate=0.5) as th:
-            run_demo(th)
+        if not use_tcp:
+            # try to open serial connection
+            with thymio.Connection.serial(discover_rate=2, refreshing_rate=0.5) as th:
+                run_demo(th)
     except serial.serialutil.SerialException:
-        # cannot open serial connection; try TCP on default local port
+        use_tcp = True
+
+    if use_tcp:
+        # try TCP on default local port
         with thymio.Connection.tcp(discover_rate=2, refreshing_rate=0.5) as th:
             run_demo(th)
