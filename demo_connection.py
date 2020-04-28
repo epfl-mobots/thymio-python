@@ -2,6 +2,7 @@
 # Author: Yves Piguet, EPFL
 
 import thymio
+import thymio.assembler
 import serial
 import sys
 
@@ -19,22 +20,30 @@ if __name__ == "__main__":
             if remote_node.device_uuid:
                 print(f"Device uuid: {remote_node.device_uuid}")
 
-            # send bytecode for "call leds.top(32, 32, 0)" and run it
-            th.set_bytecode(node_id, [
-                3,          # vector table size
-                0xffff, 3,  # address of event 0xffff (init)
-                0x1000,     # push.s 0
-                0x426b,     # store 0x26b
-                0x126b,     # push.s 0x26b
-                0x1020,     # push.s 32
-                0x426a,     # store 0x26a
-                0x126a,     # push.s 0x26a
-                0x1020,     # push.s 32
-                0x4269,     # store 0x269
-                0x1269,     # push.s 0x269
-                0xc028,     # callnat 0x28
-                0x0000      # stop
-            ])
+            # assemble program corresponding to "call leds.top(32, 32, 0)"
+            src = """
+                dc end_toc              ; total size of event handler table
+                dc _ev.init, init       ; id and address of init event
+            end_toc:
+
+            init:                       ; code executed on init event
+                push.s 0                ; push address of 3rd arg, stored somewhere in free memory
+                store _userdata
+                push.s _userdata
+                push.s 32               ; push address of 2nd arg
+                store _userdata+1
+                push.s _userdata+1
+                push.s 32               ; push address of 1st arg
+                store _userdata+2
+                push.s _userdata+2
+                callnat _nf.leds.top    ; call native function to set top rgb led
+                stop                    ; stop program
+            """
+            a = thymio.assembler.Assembler(remote_node, src)
+            bc = a.assemble()
+
+            # send bytecode and run it
+            th.set_bytecode(node_id, bc)
             th.run(node_id)
 
     async def on_variables_received(node_id):
@@ -54,17 +63,26 @@ if __name__ == "__main__":
             th.close()
 
 
-    use_tcp = len(sys.argv) > 1 and sys.argv[1] == "--tcp"
+    use_tcp = False
+    debug = False
+    for arg in sys.argv[1:]:
+        if arg == "--tcp":
+            use_tcp = True
+        elif arg == "--debug":
+            debug = True
+        else:
+            sys.stderr.write(f"Unknown option {arg}\n")
+            exit(1)
 
     try:
         if not use_tcp:
             # try to open serial connection
-            with thymio.Connection.serial(discover_rate=2, refreshing_rate=0.5) as th:
+            with thymio.Connection.serial(discover_rate=2, refreshing_rate=0.5, debug=debug) as th:
                 run_demo(th)
     except serial.serialutil.SerialException:
         use_tcp = True
 
     if use_tcp:
         # try TCP on default local port
-        with thymio.Connection.tcp(discover_rate=2, refreshing_rate=0.5) as th:
+        with thymio.Connection.tcp(discover_rate=2, refreshing_rate=0.5, debug=debug) as th:
             run_demo(th)

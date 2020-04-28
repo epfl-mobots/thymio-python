@@ -230,7 +230,7 @@ class Message:
             str += f" vers={self.protocol_version}"
             str += f" bc_size={self.bytecode_size}"
             str += f" stack_size={self.stack_size}"
-            str += f" var_size={self.var_size}"
+            str += f" max_var_size={self.max_var_size}"
             str += f" #var={self.num_named_var}"
             str += f" #ev={self.num_local_events}"
             str += f" #nat={self.num_native_fun}"
