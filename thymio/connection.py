@@ -149,10 +149,12 @@ class Connection:
     def __init__(self,
                  io,
                  host_node_id=1, refreshing_rate=None, discover_rate=None,
+                 debug=False,
                  loop=None):
         self.loop = loop or asyncio.new_event_loop()
         self.terminating = False
         self.io = io
+        self.debug = debug
         self.timeout = 3
         self.host_node_id = host_node_id
         self.auto_handshake = False
@@ -338,6 +340,8 @@ class Connection:
     async def handle_message(self, msg):
         """Handle an input message.
         """
+        if self.debug:
+            print("<", msg)
         source_node = msg.source_node
         if msg.id == Message.ID_NODE_PRESENT:
             will_do_handshake = False
@@ -431,8 +435,6 @@ class Connection:
                 remote_node.local_events.append(msg.event_name)
         elif msg.id == Message.ID_EXECUTION_STATE_CHANGED:
             pass  # ignore
-        else:
-            print(msg)
         self.remote_nodes[source_node].last_msg_time = time.time()
 
     def uuid_to_node_id(self, uuid):
@@ -446,6 +448,8 @@ class Connection:
         """Send a message.
         """
         with self.output_lock:
+            if self.debug:
+                print(">", msg)
             self.io.write(msg.serialize())
 
     def get_target_node_var_total_size(self, target_node_id):
