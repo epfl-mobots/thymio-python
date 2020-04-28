@@ -131,12 +131,35 @@ class Assembler:
         }
 
         def resolve_symbol(a, defs):
-            if type(a) is str:
+
+            def resolve_def(name):
                 if defs is None:
                     return 0
-                if a not in defs:
-                    raise Exception(f'Unknown symbol "{a}"')
-                a = defs[a]
+                if re.match("^(0x[0-9a-f]+|[0-9]+)$", name, flags=re.I):
+                    return int(name, 0)
+                if name not in defs:
+                    raise Exception(f'Unknown symbol "{name}"')
+                return defs[name]
+
+            if type(a) is str:
+                # eval
+                val = 0
+                minus = False
+                offset = 0
+                while offset < len(a):
+                    r = re.match("(\+|-|[._a-z0-9]+)", a[offset:], re.I)
+                    if r is None:
+                        raise Exception("Syntax error")
+                    s = r.group()
+                    if s == "+":
+                        minus = False
+                    elif s == "-":
+                        minus = True
+                    else:
+                        val += -resolve_def(s) if minus else resolve_def(s)
+                    offset += len(s)
+                return val
+
             return a
 
         def def_to_code(instr):
@@ -366,7 +389,7 @@ def test(remote_node=None):
 end_toc:
 
 init:
-    push foo
+    push foo+1
     stop
 """
     a = Assembler(remote_node, src)
