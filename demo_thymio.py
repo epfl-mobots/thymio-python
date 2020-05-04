@@ -2,12 +2,32 @@
 # Author: Yves Piguet, EPFL
 
 import thymio.thymio
+import sys
 import os
 
 if __name__ == "__main__":
 
+    # check arguments
+    use_tcp = False
+    serial_port = None
+    host = None
+    tcp_port = None
+    if len(sys.argv) == 3:
+        # tcp: argv[1] = host, argv[2] = port
+        use_tcp = True
+        host = sys.argv[1]
+        tcp_port = int(sys.argv[2])
+    elif len(sys.argv) == 2:
+        if sys.argv[1] == "--help":
+            print("Usage: {sys.argv[0]} [serial_port | host port]")
+            sys.exit(0)
+        # serial port: argv[1] = serial port
+        serial_port = sys.argv[1]
+
     # connect
-    th = thymio.thymio.Thymio()
+    th = thymio.thymio.Thymio(use_tcp=use_tcp,
+                              serial_port=serial_port,
+                              host=host, tcp_port=tcp_port)
     # constructor options: on_connect, on_disconnect, refreshing_rate, discover_rate, loop
     th.connect()
 
