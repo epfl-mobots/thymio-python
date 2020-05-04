@@ -180,6 +180,9 @@ class Connection:
         # async fun(node_id)
         self.on_variables_received = None
 
+        # callback for notification about execution state
+        self.on_execution_state_changed = None
+
         # discover coroutine
         if discover_rate is not None:
             async def discover():
@@ -434,7 +437,8 @@ class Connection:
                 remote_node = self.remote_nodes[source_node]
                 remote_node.local_events.append(msg.event_name)
         elif msg.id == Message.ID_EXECUTION_STATE_CHANGED:
-            pass  # ignore
+            if self.on_execution_state_changed:
+                await self.on_execution_state_changed(source_node, msg.pc, msg.flags)
         self.remote_nodes[source_node].last_msg_time = time.time()
 
     def uuid_to_node_id(self, uuid):

@@ -125,6 +125,12 @@ class Message:
             for i in range(len(self.payload) // 2 - 1):
                 word, offset = self.get_uint16(offset)
                 self.var_data.append(word)
+        elif self.id == Message.ID_EXECUTION_STATE_CHANGED:
+            self.pc, offset = self.get_uint16(0)
+            self.flags, offset = self.get_uint16(offset)
+            self.event_active = (self.flags & 1) != 0
+            self.step_by_step = (self.flags & 2) != 0
+            self.event_running = (self.flags & 4) != 0
         elif self.id == Message.ID_NODE_PRESENT:
             self.version, offset = self.get_uint16(0)
         elif self.id == Message.ID_DEVICE_INFO:
@@ -248,6 +254,9 @@ class Message:
             for word in self.var_data:
                 str += f"{word},"
             str += ")"
+        elif self.id == Message.ID_EXECUTION_STATE_CHANGED:
+            str += f" pc={self.pc} event_active={self.event_active} step_by_step={self.step_by_step} event_running={self.event_running}"
+
         elif self.id == Message.ID_NODE_PRESENT:
             str += f" version={self.version}"
         return str
