@@ -38,20 +38,36 @@ class Thymio:
                     variable_observer = self.thymio.variable_observers[node_id]
                     variable_observer(node_id)
 
-            self.connection = Connection.serial(discover_rate=self.thymio.discover_rate,
-                                                refreshing_rate=self.thymio.refreshing_rate,
-                                                loop=self.loop)
+            if self.thymio.use_tcp:
+                self.connection = Connection.tcp(host=self.thymio.host,
+                                                 port=self.thymio.tcp_port,
+                                                 discover_rate=self.thymio.discover_rate,
+                                                 refreshing_rate=self.thymio.refreshing_rate,
+                                                 loop=self.loop)
+            else:
+                self.connection = Connection.serial(port=self.thymio.serial_port,
+                                                    discover_rate=self.thymio.discover_rate,
+                                                    refreshing_rate=self.thymio.refreshing_rate,
+                                                    loop=self.loop)
             self.connection.on_connection_changed = on_connection_changed
             self.connection.on_variables_received = on_variables_received
 
             self.loop.run_forever()
 
     def __init__(self,
+                 use_tcp=False,
+                 serial_port=None,
+                 host=None,
+                 tcp_port=None,
                  on_connect=None,
                  on_disconnect=None,
                  refreshing_rate=0.1,
                  discover_rate=2,
                  loop=None):
+        self.use_tcp = use_tcp
+        self.serial_port = serial_port
+        self.host = host
+        self.tcp_port = tcp_port
         self.on_connect_cb = on_connect
         self.on_disconnect_cb = on_disconnect
         self.refreshing_rate = refreshing_rate
