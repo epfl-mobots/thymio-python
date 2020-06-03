@@ -20,24 +20,39 @@ if __name__ == "__main__":
             if remote_node.device_uuid:
                 print(f"Device uuid: {remote_node.device_uuid}")
 
-            # assemble program corresponding to "call leds.top(32, 32, 0)"
+            # assemble program corresponding to "call leds.top(32, 32, 0) onevent button.left emit myid counter counter++"
             src = """
-                dc end_toc              ; total size of event handler table
-                dc _ev.init, init       ; id and address of init event
+                dc end_toc                  ; total size of event handler table
+                dc _ev.init, init           ; id and address of init event
+                dc _ev.button.left, btnleft ; id and address of button.left event
             end_toc:
 
-            init:                       ; code executed on init event
-                push.s 0                ; push address of 3rd arg, stored somewhere in free memory
+            init:                           ; code executed on init event
+                push.s 0                    ; initialize counter
+                store counter
+                push.s 0                    ; push address of 3rd arg, stored somewhere in free memory
                 store _userdata
                 push.s _userdata
-                push.s 32               ; push address of 2nd arg
+                push.s 32                   ; push address of 2nd arg
                 store _userdata+1
                 push.s _userdata+1
-                push.s 32               ; push address of 1st arg
+                push.s 32                   ; push address of 1st arg
                 store _userdata+2
                 push.s _userdata+2
-                callnat _nf.leds.top    ; call native function to set top rgb led
-                stop                    ; stop program
+                callnat _nf.leds.top        ; call native function to set top rgb led
+                stop                        ; stop program
+
+            btnleft:
+                emit myid, counter, 1       ; emit myid with current counter value
+                load counter                ; increment counter
+                push.s 1
+                add
+                store counter
+                stop
+            myid:
+                equ 0
+            counter:
+                equ _userdata+3
             """
             a = thymio.assembler.Assembler(remote_node, src)
             bc = a.assemble()
@@ -52,9 +67,13 @@ if __name__ == "__main__":
         except KeyError:
             print("on_variables_received", th.remote_nodes[node_id])
 
+    async def on_user_event(node_id, event_id, event_args):
+        print(f"Node {node_id}: rcv event {event_id}, value={event_args}")
+
     def run_demo(th):
         th.on_connection_changed = on_connection_changed
         th.on_variables_received = on_variables_received
+        th.on_user_event = on_user_event
         try:
             th.run_forever()
         except KeyboardInterrupt:

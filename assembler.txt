@@ -1,13 +1,13 @@
 Aseba bytecode assembler
 ========================
 
-A simple assembler is provided for the Aseba virtual machine (VM). Assembler input can contain VM instructions, labels, symbols, expressions, pseudo-instructions, and comments.
+A simple assembler is provided for the Aseba virtual machine (VM). The assembler input can contain VM instructions, labels, symbols, expressions, pseudo-instructions, and comments.
 
-The Aseba VM has three separate memory spaces: program (where bytecode is stored), data (where variables are stored, including those predefined and accessed also by the firmware for I/O). The stack is used for return addresses of subroutine calls, for aithmetic and logic operators, and for passing parameter addresses to native functions. All values (instructions, data and stack elements) are stored in signed 16-bit words. Some instructions use signed 12-bit words for addresses, ids, relative jumps, or small literal values.
+The Aseba VM has three separate memory spaces: program (where bytecode is stored), data (where variables are stored, including those predefined and accessed also by the firmware for I/O), and stack. The stack is used for return addresses of subroutine calls, for passing arguments and getting results of arithmetic, logic and load/store operators, and for passing parameter addresses to native functions. All values (instructions, data and stack elements) are stored in 16-bit words. Arithmetic and comparison operators assume signed values. Some instructions contain in their least-significant 12 bits a signed value for addresses, ids, relative jumps, or small literal values.
 
 Communication between programs and the robot hardware is performed with two means: via special variables, and via calls to native functions. Special variables are located at the beginning of the data space. Native functions, identified by an id, expect parameter addresses on the stack; the native function itself removes these addresses from the stack.
 
-The bytecode begins with a table at address 0 with the adresses of event handlers. The first word is the total table length (always odd); then each entry is made of two words, first the event id, then the address in the program. When the VM receives an event, it checks in the table if it finds an entry for it; in that case, it jumps to the specified address and runs the code until a "stop" instruction. Variables are preserved across event handling. A special event (id 0xffff or -1) corresponds to initialization; it is triggered upon program start.
+The bytecode begins with a table at address 0 with the addresses of event handlers. The first word is the total table length (always odd); then each entry is made of two words, first the event id, then the address in the program. When the VM receives an event, it checks in the table if it finds an entry for it; in that case, it jumps to the specified address and runs the code until a "stop" instruction. Variables are preserved across event handling. A special event (id 0xffff or -1) corresponds to initialization; it is triggered upon program start.
 
 The location of special variables, the id of native functions and of events depend on the robot and are subject to change between firmware releases. Symbols are predefined to use values obtained from the robot itself (see below).
 
