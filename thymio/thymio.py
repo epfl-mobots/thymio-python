@@ -56,7 +56,7 @@ class Thymio:
                                                     loop=self.loop)
             self.connection.on_connection_changed = on_connection_changed
             self.connection.on_variables_received = on_variables_received
-            self.connection.user_event_listener = user_event_listener
+            self.connection.on_user_event = on_user_event
 
             self.loop.run_forever()
 
