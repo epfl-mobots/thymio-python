@@ -130,10 +130,10 @@ class Assembler:
             },
         }
 
-        def resolve_symbol(a, defs):
+        def resolve_symbol(a, defs, required):
 
             def resolve_def(name):
-                if defs is None:
+                if not required:
                     return 0
                 if re.match("^(0x[0-9a-f]+|[0-9]+)$", name, flags=re.I):
                     return int(name, 0)
@@ -169,123 +169,124 @@ class Assembler:
             return register
 
         @def_to_code("dc")
-        def to_code_dc(pc, args, label, defs, line):
+        def to_code_dc(pc, args, label, defs, phase, line):
             return [
-                resolve_symbol(a, defs) & 0xffff
+                resolve_symbol(a, defs, phase == 1) & 0xffff
                 for a in args
             ]
 
         @def_to_code("equ")
-        def to_code_equ(pc, args, label, defs, line):
+        def to_code_equ(pc, args, label, defs, phase, line):
             if label is None:
                 raise Exception(f'No label for pseudo-instruction "equ" (line {line})')
             if defs is not None:
-                defs[label] = resolve_symbol(args[0], defs)
+                defs[label] = resolve_symbol(args[0], defs, phase == 1)
+                label = None
             return []
 
         @def_to_code("push.s")
-        def to_code_push_s(pc, args, label, defs, line):
-            arg = resolve_symbol(args[0], defs)
+        def to_code_push_s(pc, args, label, defs, phase, line):
+            arg = resolve_symbol(args[0], defs, phase == 1)
             if arg >= 0x1000 or -arg > 0x1000:
                 raise Exception(f"Small integer overflow (line {line})")
             return [0x1000 | arg & 0xfff]
 
         @def_to_code("push")
-        def to_code_push(pc, args, label, defs, line):
-            arg = resolve_symbol(args[0], defs)
+        def to_code_push(pc, args, label, defs, phase, line):
+            arg = resolve_symbol(args[0], defs, phase == 1)
             return [0x2000, arg & 0xffff]
 
         @def_to_code("load")
-        def to_code_load(pc, args, label, defs, line):
-            arg = resolve_symbol(args[0], defs)
+        def to_code_load(pc, args, label, defs, phase, line):
+            arg = resolve_symbol(args[0], defs, phase == 1)
             if arg < 0 or arg >= 0x1000:
                 raise Exception(f"Data address out of range (line {line})")
             return [0x3000 | arg & 0xfff]
 
         @def_to_code("store")
-        def to_code_store(pc, args, label, defs, line):
-            arg = resolve_symbol(args[0], defs)
+        def to_code_store(pc, args, label, defs, phase, line):
+            arg = resolve_symbol(args[0], defs, phase == 1)
             if arg < 0 or arg >= 0x1000:
                 raise Exception(f"Data address out of range (line {line})")
             return [0x4000 | arg & 0xfff]
 
         @def_to_code("load.ind")
-        def to_code_load_ind(pc, args, label, defs, line):
-            arg = resolve_symbol(args[0], defs)
+        def to_code_load_ind(pc, args, label, defs, phase, line):
+            arg = resolve_symbol(args[0], defs, phase == 1)
             if arg < 0 or arg >= 0x1000:
                 raise Exception(f"Data address out of range (line {line})")
-            size_arg = resolve_symbol(args[1], defs)
+            size_arg = resolve_symbol(args[1], defs, phase == 1)
             return [0x5000 | arg & 0xfff, size_arg & 0xffff]
 
         @def_to_code("store.ind")
-        def to_code_store_ind(pc, args, label, defs, line):
-            arg = resolve_symbol(args[0], defs)
+        def to_code_store_ind(pc, args, label, defs, phase, line):
+            arg = resolve_symbol(args[0], defs, phase == 1)
             if arg < 0 or arg >= 0x1000:
                 raise Exception(f"Data address out of range (line {line})")
-            size_arg = resolve_symbol(args[1], defs)
+            size_arg = resolve_symbol(args[1], defs, phase == 1)
             return [0x6000 | arg & 0xfff, size_arg & 0xffff]
 
         @def_to_code("not")
-        def to_code_not(pc, args, label, defs, line):
+        def to_code_not(pc, args, label, defs, phase, line):
             raise Exception(f'Unary "not" not implemented in the VM (line {line})')
 
         @def_to_code("jump")
-        def to_code_jump(pc, args, label, defs, line):
-            arg = resolve_symbol(args[0], defs)
+        def to_code_jump(pc, args, label, defs, phase, line):
+            arg = resolve_symbol(args[0], defs, phase == 1)
             return [0x9000 | (arg - pc) & 0xfff]
 
         @def_to_code("jump.if.not")
-        def to_code_jump_if_not(pc, args, label, defs, line):
+        def to_code_jump_if_not(pc, args, label, defs, phase, line):
             test_instr = self.instr[args[0]] if args[0] in self.instr else None
             if (test_instr is None
                 or "code" not in test_instr
                 or len(test_instr["code"]) != 1
                 or (test_instr["code"][0] & 0xf000) != 0x8000):
                 raise Exception(f'Unknown op "{args[0]}" for jump.if.not (line {line})')
-            arg = resolve_symbol(args[1], defs)
+            arg = resolve_symbol(args[1], defs, phase == 1)
             return [0xa000 | (test_instr["code"][0] & 0xff), (arg - pc) & 0xffff]
 
         @def_to_code("do.jump.when.not")
-        def to_code_do_jump_when_not(pc, args, label, defs, line):
+        def to_code_do_jump_when_not(pc, args, label, defs, phase, line):
             test_instr = self.instr[args[0]] if args[0] in self.instr else None
             if (test_instr is None
                 or "code" not in test_instr
                 or len(test_instr["code"]) != 1
                 or (test_instr["code"][0] & 0xf000) != 0x8000):
                 raise Exception(f'Unknown op "{args[0]}" for do.jump.when.not (line {line})')
-            arg = resolve_symbol(args[1], defs)
+            arg = resolve_symbol(args[1], defs, phase == 1)
             return [0xa100 | (test_instr["code"][0] & 0xff), (arg - pc) & 0xffff]
 
         @def_to_code("dont.jump.when.not")
-        def to_code_do_jump_when_not(pc, args, label, defs, line):
+        def to_code_do_jump_when_not(pc, args, label, defs, phase, line):
             test_instr = self.instr[args[0]] if args[0] in self.instr else None
             if (test_instr is None
                 or "code" not in test_instr
                 or len(test_instr["code"]) != 1
                 or (test_instr["code"][0] & 0xf000) != 0x8000):
                 raise Exception(f'Unknown op "{args[0]}" for dont.jump.when.not (line {line})')
-            arg = resolve_symbol(args[1], defs)
+            arg = resolve_symbol(args[1], defs, phase == 1)
             return [0xa300 | (test_instr["code"][0] & 0xff), (arg - pc) & 0xffff]
 
         @def_to_code("emit")
-        def to_code_emit(pc, args, label, defs, line):
-            id = resolve_symbol(args[0], defs)
+        def to_code_emit(pc, args, label, defs, phase, line):
+            id = resolve_symbol(args[0], defs, phase == 1)
             if id < 0 or id >= 0x1000:
                 raise Exception(f"Event id out of range (line {line})")
-            addr = resolve_symbol(args[1], defs)
-            size = resolve_symbol(args[2], defs)
-            return [0xb000 | arg & 0xfff, addr & 0xffff, size & 0xffff]
+            addr = resolve_symbol(args[1], defs, phase == 1)
+            size = resolve_symbol(args[2], defs, phase == 1)
+            return [0xb000 | id & 0xfff, addr & 0xffff, size & 0xffff]
 
         @def_to_code("callnat")
-        def to_code_callnat(pc, args, label, defs, line):
-            arg = resolve_symbol(args[0], defs)
+        def to_code_callnat(pc, args, label, defs, phase, line):
+            arg = resolve_symbol(args[0], defs, phase == 1)
             if arg < 0 or arg >= 0x1000:
                 raise Exception(f"Native call id out of range (line {line})")
             return [0xc000 | arg & 0xfff]
 
         @def_to_code("callsub")
-        def to_code_callsub(pc, args, label, defs, line):
-            arg = resolve_symbol(args[0], defs)
+        def to_code_callsub(pc, args, label, defs, phase, line):
+            arg = resolve_symbol(args[0], defs, phase == 1)
             if arg < 0 or arg >= 0x1000:
                 raise Exception(f"Subroutine address out of range (line {line})")
             return [0xd000 | arg & 0xfff]
@@ -367,7 +368,7 @@ class Assembler:
                             int(a, 0) if re_number.match(a) else a
                             for a in args_split
                         ]
-                        bytecode += instr["to_code"](len(bytecode), args, label, defs if phase == 1 else None, i + 1)
+                        bytecode += instr["to_code"](len(bytecode), args, label, defs, phase, i + 1)
                     if label is not None and defs[label] != len(bytecode):
                         label = None
                     continue
