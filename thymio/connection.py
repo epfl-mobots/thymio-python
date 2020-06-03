@@ -181,7 +181,12 @@ class Connection:
         self.on_variables_received = None
 
         # callback for notification about execution state
+        # async fun(node_id, pc, flags)
         self.on_execution_state_changed = None
+
+        # callback for notification that an event has been emitted
+        # async fun(node_id, event_id, event_args)
+        self.on_user_event = None
 
         # discover coroutine
         if discover_rate is not None:
@@ -439,6 +444,10 @@ class Connection:
         elif msg.id == Message.ID_EXECUTION_STATE_CHANGED:
             if self.on_execution_state_changed:
                 await self.on_execution_state_changed(source_node, msg.pc, msg.flags)
+        elif msg.id < Message.ID_FIRST_ASEBA_ID:
+            # user event sent by emit
+            if self.on_user_event:
+                await self.on_user_event(source_node, msg.id, msg.user_event_arg)
         self.remote_nodes[source_node].last_msg_time = time.time()
 
     def uuid_to_node_id(self, uuid):

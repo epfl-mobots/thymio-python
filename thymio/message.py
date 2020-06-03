@@ -8,6 +8,7 @@ class Message:
     """
 
     # v5
+    ID_FIRST_ASEBA_ID = 0x8000
     ID_BOOTLOADER_RESET = 0x8000
     ID_BOOTLOADER_READ_PAGE = 0x8001
     ID_BOOTLOADER_WRITE_PAGE = 0x8002
@@ -184,6 +185,13 @@ class Message:
         elif self.id == Message.ID_GET_NODE_DESCRIPTION_FRAGMENT:
             self.version, offset = self.get_uint16(0)
             self.fragment, offset = self.get_uint16(offset)
+        elif self.id < Message.ID_FIRST_ASEBA_ID:
+            val = []
+            offset = 0
+            for i in range(0, len(self.payload), 2):
+                v, offset = self.get_uint16(offset)
+                val.append(v)
+            self.user_event_arg = val
 
     def serialize(self):
         """Serialize message to bytes.

@@ -38,6 +38,11 @@ class Thymio:
                     variable_observer = self.thymio.variable_observers[node_id]
                     variable_observer(node_id)
 
+            async def on_user_event(node_id, event_id, event_args):
+                if node_id in self.thymio.user_event_listeners:
+                    user_event_listener = self.thymio.user_event_listeners[node_id]
+                    user_event_listener(node_id, event_id, event_args)
+
             if self.thymio.use_tcp:
                 self.connection = Connection.tcp(host=self.thymio.host,
                                                  port=self.thymio.tcp_port,
@@ -51,6 +56,7 @@ class Thymio:
                                                     loop=self.loop)
             self.connection.on_connection_changed = on_connection_changed
             self.connection.on_variables_received = on_variables_received
+            self.connection.user_event_listener = user_event_listener
 
             self.loop.run_forever()
 
@@ -139,6 +145,9 @@ class Thymio:
 
     def set_variable_observer(self, node_id, observer):
         self.variable_observers[node_id] = observer
+
+    def set_user_event_listener(self, node_id, listener):
+        self.user_event_listeners[node_id] = listener
 
     def events(self, node_id):
         """Get list of event names.
