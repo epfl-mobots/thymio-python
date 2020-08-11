@@ -1,7 +1,7 @@
 # Test of the communication with Thymio via serial port
 # Author: Yves Piguet, EPFL
 
-import thymio.thymio
+from thymio import Thymio
 import sys
 import os
 
@@ -25,9 +25,9 @@ if __name__ == "__main__":
         serial_port = sys.argv[1]
 
     # connect
-    th = thymio.thymio.Thymio(use_tcp=use_tcp,
-                              serial_port=serial_port,
-                              host=host, tcp_port=tcp_port)
+    th = Thymio(use_tcp=use_tcp,
+                serial_port=serial_port,
+                host=host, tcp_port=tcp_port)
     # constructor options: on_connect, on_disconnect, refreshing_rate, discover_rate, loop
     th.connect()
 
