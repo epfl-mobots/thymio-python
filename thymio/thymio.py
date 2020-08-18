@@ -1,29 +1,50 @@
-# Communication with Thymio via serial port or tcp
-# Author: Yves Piguet, EPFL
+"""
+Communication with Thymio via serial port or tcp
+Author: Yves Piguet, EPFL
+"""
 
 import asyncio
 import threading
 import time
+from typing import List
 
 from thymio.connection import Connection
 
 
 class Thymio:
-    """Helper object for communicating with one or several Thymios connected to
-    a single port.
+    """
+    Thymio is a helper object for communicating with one or several Thymios
+    connected to a single port.
     """
 
     class _ThymioProxy:
+        """
+        _ThymioProxy is a proxy to a Thymio object to call user-defined
+        functions from asyncio coroutines.
+        """
 
-        def __init__(self, thymio):
+        def __init__(self, thymio: "thymio.Thymio"):
+            """
+            Construct a new __ThymioProxy object.
+
+            :param thymio: Thymio object
+            """
+
             self.thymio = thymio
             self.connection = None
             self.loop = asyncio.get_event_loop()
             self.nodes = set()
 
         def run(self):
+            """
+            Run the asyncio loop forever, taking care of executing callbacks
+            registered for the Thymio connection.
+            """
 
-            async def on_connection_changed(node_id, connected):
+            async def on_connection_changed(node_id, connected: bool):
+                """
+                Do what's required when the Thymio connection changes.
+                """
                 if connected:
                     self.nodes.add(node_id)
                     if self.thymio.on_connect_cb:
@@ -33,12 +54,18 @@ class Thymio:
                     if self.thymio.on_disconnect_cb:
                         self.thymio.on_disconnect_cb(node_id)
 
-            async def on_variables_received(node_id):
+            async def on_variables_received(node_id: int):
+                """
+                Do what's required when new variables have been received.
+                """
                 if node_id in self.thymio.variable_observers:
                     variable_observer = self.thymio.variable_observers[node_id]
                     variable_observer(node_id)
 
-            async def on_user_event(node_id, event_id, event_args):
+            async def on_user_event(node_id: int, event_id: int, event_args: List[int]):
+                """
+                Do what's required when an event has been received from the Thymio.
+                """
                 if node_id in self.thymio.user_event_listeners:
                     user_event_listener = self.thymio.user_event_listeners[node_id]
                     user_event_listener(node_id, event_id, event_args)

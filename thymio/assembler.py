@@ -1,12 +1,24 @@
-# Assembler for Aseba VM bytecode
-# Author: Yves Piguet, EPFL
+"""
+Assembler for Aseba VM bytecode
+Author: Yves Piguet, EPFL
+"""
 
+import thymio
 import re
+from typing import Callable, Dict, List, Union
 
 
 class Assembler:
 
-    def __init__(self, remote_node, src):
+    def __init__(self, remote_node: thymio.connection.RemoteNode, src: str):
+        """
+        Construct a new Assembler object.
+
+        Args:
+            remote_node: Remote node used to predefine constants.
+            src: Assembly source code.
+        """
+
         self.remote_node = remote_node
         self.src = src
 
@@ -130,9 +142,9 @@ class Assembler:
             },
         }
 
-        def resolve_symbol(a, defs, required):
+        def resolve_symbol(a, defs: Dict[str, int], required: bool) -> int:
 
-            def resolve_def(name):
+            def resolve_def(name: str) -> int:
                 if not required:
                     return 0
                 if re.match("^(0x[0-9a-f]+|[0-9]+)$", name, flags=re.I):
@@ -162,14 +174,14 @@ class Assembler:
 
             return a
 
-        def def_to_code(instr):
+        def def_to_code(instr: str) -> Callable:
             def register(fun):
                 self.instr[instr]["to_code"] = fun
                 return fun
             return register
 
         @def_to_code("dc")
-        def to_code_dc(pc, args, label, defs, phase, line):
+        def to_code_dc(pc: int, args: List[Union[int, str]], label: str, defs: Dict[str, int], phase: int, line: int) -> List[int]:
             return [
                 resolve_symbol(a, defs, phase == 1) & 0xffff
                 for a in args
@@ -291,7 +303,7 @@ class Assembler:
                 raise Exception(f"Subroutine address out of range (line {line})")
             return [0xd000 | arg & 0xfff]
 
-    def node_definitions(self):
+    def node_definitions(self) -> None:
         """Create definition dict based on node variables and native functions.
         """
 
@@ -314,7 +326,7 @@ class Assembler:
 
         return defs
 
-    def assemble(self):
+    def assemble(self) -> List[int]:
         """Assemble to bytecode.
         """
 
@@ -378,7 +390,6 @@ class Assembler:
         return bytecode
 
 def test(remote_node=None):
-    import thymio
     if remote_node is None:
         remote_node = thymio.connection.RemoteNode()
 

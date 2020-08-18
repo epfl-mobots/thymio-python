@@ -18,14 +18,13 @@ if __name__ == "__main__":
         elif arg == "--debug":
             debug = True
         elif arg[0:2] == "--" or asm:
-            print("Usage: python3 {sys.argv[0]} [--tcp] program.asm")
+            print(f"Usage: python3 {sys.argv[0]} [--tcp] [program.asm]")
             exit(1)
         else:
             with open(arg, 'r') as file:
                 asm = file.read()
     if asm is None:
-        print("Missing program filename")
-        exit(1)
+        asm = sys.stdin.read()
 
     code_sent = False
 

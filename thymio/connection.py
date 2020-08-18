@@ -1,9 +1,12 @@
-# Communication with Thymio via serial port or tcp
-# Author: Yves Piguet, EPFL
+"""
+Communication with Thymio via serial port or tcp
+Author: Yves Piguet, EPFL
+"""
 
 import asyncio
 import threading
 import time
+from typing import List, Optional
 
 from thymio.message import Message
 
@@ -19,10 +22,10 @@ class InputThread(threading.Thread):
         self.loop = loop
         self.handle_msg = handle_msg
 
-    def terminate(self):
+    def terminate(self) -> None:
         self.running = False
 
-    def read_uint16(self):
+    def read_uint16(self) -> int:
         """Read an unsigned 16-bit number.
         """
         b = self.io.read(2)
@@ -36,7 +39,7 @@ class InputThread(threading.Thread):
         else:
             return b[0] + 256 * b[1]
 
-    def read_message(self):
+    def read_message(self) -> Message:
         """Read a complete message.
         """
         payload_len = self.read_uint16()
@@ -46,7 +49,7 @@ class InputThread(threading.Thread):
         msg = Message(id, source_node, payload)
         return msg
 
-    def run(self):
+    def run(self) -> None:
         """Input thread code.
         """
         while self.running:
@@ -63,7 +66,7 @@ class RemoteNode:
     """Remote node description and state.
     """
 
-    def __init__(self, node_id=None, version=None):
+    def __init__(self, node_id: Optional[int] = None, version: Optional[int] = None):
         self.node_id = node_id
         self.version = version
         self.device_name = None
@@ -89,13 +92,13 @@ class RemoteNode:
         self.native_functions = []  # names
         self.native_functions_arg_sizes = {}  # indexed by name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"RemoteNode node_id={self.node_id} uuid={self.device_uuid}"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
-    def add_var(self, name, size):
+    def add_var(self, name: str, size: int) -> None:
         """Add the definition of a variable.
         """
         self.named_variables.append(name)
@@ -103,17 +106,17 @@ class RemoteNode:
         self.var_size[name] = size
         self.var_total_size += size
 
-    def reset_var_data(self):
+    def reset_var_data(self) -> None:
         """Reset the variable data to 0.
         """
         self.var_data = [0 for i in range(self.var_total_size)]
 
-    def get_var(self, name, index=0):
+    def get_var(self, name: str, index: int = 0) -> int:
         """Get the value of a scalar variable or an item in an array variable.
         """
         return self.var_data[self.var_offset[name] + index]
 
-    def get_var_array(self, name):
+    def get_var_array(self, name: str) -> List[int]:
         """Get the value of an array variable.
         """
         if name not in self.var_offset:
@@ -121,18 +124,18 @@ class RemoteNode:
         offset = self.var_offset[name]
         return self.var_data[offset:offset + self.var_size[name]]
 
-    def set_var(self, name, val, index=0):
+    def set_var(self, name: str, val: int, index: Optional[int] = 0) -> None:
         """Set the value of a scalar variable or an item in an array variable.
         """
         self.var_data[self.var_offset[name] + index] = val
 
-    def set_var_array(self, name, val):
+    def set_var_array(self, name: str, val: List[int]) -> None:
         """Set the value of an array variable.
         """
         offset = self.var_offset[name]
         self.var_data[offset:offset + len(val)] = val
 
-    def set_var_data(self, offset, data):
+    def set_var_data(self, offset: int, data: List[int]) -> int:
         """Set values in the variable data array.
         """
         self.var_data[offset:offset + len(data)] = data
@@ -196,35 +199,35 @@ class Connection:
                     await asyncio.sleep(discover_rate)
             self.loop.create_task(discover())
 
-    def close(self):
+    def close(self) -> None:
         """Close connection.
         """
         if not self.io.closed:
             self.io.close()
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Shutdown everything.
         """
         self.terminating = True
         self.input_thread.terminate()
 
-    def run_forever(self):
+    def run_forever(self) -> None:
         """Run asyncio loop forever.
         """
         self.loop.run_forever()
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.shutdown()
         self.close()
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type, value, traceback) -> None:
         self.close()
 
     @staticmethod
-    def serial_ports():
+    def serial_ports() -> List[str]:
         """Get the list of serial ports for the current platform.
         """
         import sys
@@ -254,7 +257,7 @@ class Connection:
         return devices
 
     @staticmethod
-    def serial_default_port():
+    def serial_default_port() -> str:
         """Get the name of the default Thymio serial port for the current
         platform.
         """
@@ -268,7 +271,7 @@ class Connection:
             return devices[0]
 
     @staticmethod
-    def serial(port=None, **kwargs):
+    def serial(port: Optional[str] = None, **kwargs) -> "Connection":
         """Create Thymio object with a serial connection.
         """
         import serial  # pip3 install pyserial
@@ -278,7 +281,7 @@ class Connection:
         return th
 
     @staticmethod
-    def tcp(host="127.0.0.1", port=33333, **kwargs):
+    def tcp(host: Optional[str] = "127.0.0.1", port: Optional[int] = 33333, **kwargs) -> "Connection":
         """Create Thymio object with a TCP connection.
         """
         import socket, io
@@ -300,7 +303,7 @@ class Connection:
         return th
 
     @staticmethod
-    def null(host_node_id=1, **kwargs):
+    def null(host_node_id: Optional[int] = 1, **kwargs) -> "Connection":
         """Create Thymio object without connection.
         """
         import io
@@ -315,11 +318,11 @@ class Connection:
 
         return Connection(NullIO(), host_node_id)
 
-    def handshake(self):
+    def handshake(self) -> None:
         self.auto_handshake = True
         self.list_nodes()
 
-    def wait_for_handshake(self, n=1, timeout=5):
+    def wait_for_handshake(self, n: Optional[int] = 1, timeout: Optional[int] = 5) -> None:
         """Wait until n remote nodes have finished handshake
         """
         if len(self.remote_node_set) < n and not self.auto_handshake:
@@ -331,12 +334,12 @@ class Connection:
             if count < 0:
                 raise TimeoutError()
 
-    def one_remote_node_id(self):
+    def one_remote_node_id(self) -> int:
         """Get the node id of one of the connected nodes.
         """
         return next(iter(self.remote_node_set))
 
-    def set_refreshing_rate(self, rate):
+    def set_refreshing_rate(self, rate: float) -> None:
         """Change the auto-refresh rate to update variables.
         """
         self.refreshing_timeout = rate
@@ -345,7 +348,7 @@ class Connection:
             for event in self.refreshing_triggers:
                 event.set()
 
-    async def handle_message(self, msg):
+    async def handle_message(self, msg: Message) -> None:
         """Handle an input message.
         """
         if self.debug:
@@ -450,14 +453,14 @@ class Connection:
                 await self.on_user_event(source_node, msg.id, msg.user_event_arg)
         self.remote_nodes[source_node].last_msg_time = time.time()
 
-    def uuid_to_node_id(self, uuid):
+    def uuid_to_node_id(self, uuid: str) -> int:
         """Get node id from device uuid.
         """
         for node in self.remote_nodes.values():
             if node.device_uuid == uuid:
                 return node.node_id
 
-    def send(self, msg):
+    def send(self, msg: Message) -> None:
         """Send a message.
         """
         with self.output_lock:
