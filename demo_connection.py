@@ -1,8 +1,14 @@
-# Test of the communication with Thymio via serial port
-# Author: Yves Piguet, EPFL
+# This file is part of thymiodirect.
+# Copyright 2020 ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE,
+# Miniature Mobile Robots group, Switzerland
+# Author: Yves Piguet
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
-import thymio
-import thymio.assembler
+# Test of the communication with Thymio via serial port
+
+from thymiodirect import Connection
+from thymiodirect.assembler import Assembler
 import serial
 import sys
 
@@ -54,7 +60,7 @@ if __name__ == "__main__":
             counter:
                 equ _userdata+3
             """
-            a = thymio.assembler.Assembler(remote_node, src)
+            a = Assembler(remote_node, src)
             bc = a.assemble()
 
             # send bytecode and run it
@@ -96,12 +102,12 @@ if __name__ == "__main__":
     try:
         if not use_tcp:
             # try to open serial connection
-            with thymio.Connection.serial(discover_rate=2, refreshing_rate=0.5, debug=debug) as th:
+            with Connection.serial(discover_rate=2, refreshing_rate=0.5, debug=debug) as th:
                 run_demo(th)
     except serial.serialutil.SerialException:
         use_tcp = True
 
     if use_tcp:
         # try TCP on default local port
-        with thymio.Connection.tcp(discover_rate=2, refreshing_rate=0.5, debug=debug) as th:
+        with Connection.tcp(discover_rate=2, refreshing_rate=0.5, debug=debug) as th:
             run_demo(th)

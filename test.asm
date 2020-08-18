@@ -1,5 +1,6 @@
 ; Test assembly program for the Thymio
 ; Author: Yves Piguet, EPFL
+; public domain
 
     dc end_toc              ; total size of event handler table
     dc _ev.init, init       ; id and address of init event

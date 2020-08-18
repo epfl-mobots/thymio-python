@@ -1,5 +1,11 @@
+# This file is part of thymiodirect.
+# Copyright 2020 ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE,
+# Miniature Mobile Robots group, Switzerland
+# Author: Yves Piguet
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # Messages defined for Aseba communication protocol
-# Author: Yves Piguet, EPFL
 
 import uuid
 

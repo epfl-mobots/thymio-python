@@ -1,16 +1,23 @@
+# This file is part of thymiodirect.
+# Copyright 2020 ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE,
+# Miniature Mobile Robots group, Switzerland
+# Author: Yves Piguet
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """
 Assembler for Aseba VM bytecode
 Author: Yves Piguet, EPFL
 """
 
-import thymio
+import thymiodirect
 import re
 from typing import Callable, Dict, List, Union
 
 
 class Assembler:
 
-    def __init__(self, remote_node: thymio.connection.RemoteNode, src: str):
+    def __init__(self, remote_node: thymiodirect.connection.RemoteNode, src: str):
         """
         Construct a new Assembler object.
 
@@ -391,7 +398,7 @@ class Assembler:
 
 def test(remote_node=None):
     if remote_node is None:
-        remote_node = thymio.connection.RemoteNode()
+        remote_node = thymiodirect.connection.RemoteNode()
 
     src = """foo:
     equ 5

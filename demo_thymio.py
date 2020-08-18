@@ -1,7 +1,13 @@
-# Test of the communication with Thymio via serial port
-# Author: Yves Piguet, EPFL
+# This file is part of thymiodirect.
+# Copyright 2020 ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE,
+# Miniature Mobile Robots group, Switzerland
+# Author: Yves Piguet
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
-from thymio import Thymio
+# Test of the communication with Thymio via serial port
+
+from thymiodirect import Thymio
 import sys
 import os
 

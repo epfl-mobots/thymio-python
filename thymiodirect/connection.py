@@ -1,3 +1,10 @@
+# This file is part of thymiodirect.
+# Copyright 2020 ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE,
+# Miniature Mobile Robots group, Switzerland
+# Author: Yves Piguet
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 """
 Communication with Thymio via serial port or tcp
 Author: Yves Piguet, EPFL
@@ -8,7 +15,7 @@ import threading
 import time
 from typing import List, Optional
 
-from thymio.message import Message
+from thymiodirect.message import Message
 
 
 class InputThread(threading.Thread):
