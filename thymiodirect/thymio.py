@@ -115,6 +115,7 @@ class Thymio:
         self.loop = loop or asyncio.get_event_loop()
         self.thymio_proxy = None
         self.variable_observers = {}
+        self.user_event_listeners = {}
 
     def connect(self):
         """Connect to Thymio or dongle.
