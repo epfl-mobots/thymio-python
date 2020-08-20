@@ -8,16 +8,15 @@ simulator).
 ## Building the package
 
 ```
-python3 setup.py bdist_wheel
+python3 setup.py sdist bdist_wheel
 ```
 
-The result is a .whl file in directory dist, e.g.
-dist/ThymioDirect-0.1.0-py3-none-any.whl
+The result is a .tar.gz file (source archive, the result of sdist) and a .whl file (built distribution, the result of bdist_wheel) in directory dist.
 
 ## Installing the package
 
 ```
-python3 -m pip install dist/ThymioDirect-0.1.0-py3-none-any.whl
+python3 -m pip install dist/ThymioDirect_EPFL_Mobots-0.1.0-py3-none-any.whl
 ```
 
 ## License

@@ -7,13 +7,26 @@
 
 from setuptools import setup
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(
-    name='ThymioDirect',
-	version='0.1.0',
-	author='Yves Piguet',
-	packages=['thymiodirect'],
-	description='Communication with Thymio II robot via serial port or TCP',
-	install_requires=[
-		'pyserial'
-	],
+    name='ThymioDirect-EPFL-Mobots',
+    version='0.1.0',
+    author='Yves Piguet',
+    packages=['thymiodirect'],
+    description='Communication with Thymio II robot via serial port or TCP',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url='https://github.com/epfl-mobots/thymio-python',
+    install_requires=[
+        'pyserial'
+    ],
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: BSD License",
+        "Intended Audience :: Education",
+        "Framework :: AsyncIO"
+    ],
+    python_requires='>=3.6',
 )
