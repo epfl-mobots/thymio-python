@@ -16,6 +16,7 @@ import time
 from typing import List
 
 from thymiodirect.connection import Connection
+from thymiodirect.assembler import Assembler
 
 
 class Thymio:
@@ -198,3 +199,14 @@ class Thymio:
             node.native_functions,
             [node.native_functions_arg_sizes[f] for f in node.native_functions]
         )
+
+    def run_asm(self, node_id: int, asm: str) -> None:
+        """Assemble assembly code to bytecode, load it and run it.
+        """
+        # assemble program
+        remote_node = self.thymio_proxy.connection.remote_nodes[node_id]
+        a = Assembler(remote_node, asm)
+        bc = a.assemble()
+        # run it
+        self.thymio_proxy.connection.set_bytecode(node_id, bc)
+        self.thymio_proxy.connection.run(node_id)
