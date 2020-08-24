@@ -184,12 +184,14 @@ ret
 Predefined definitions
 ----------------------
 
-The set of definitions contains predefined values for the variables and native functions, retrieved from the Thymio. Variables have the same name as in Aseba. Two special definitions characterize the area of memory available for user variables:
+The set of definitions contains predefined values for the variables, native functions and events, retrieved from the Thymio. Variables have the same name as in Aseba. Two special definitions characterize the area of memory available for user variables:
 
 _userdata: address of the first word available for user variables
 _topdata: address following the last word available for user variables
 
 The id of native functions is the same as the name used in Aseba, prefixed with "_nf." to avoid any name clash with variables.
+
+The id of local events is the same as the name used in Aseba, prefixed with "_ev." to avoid any name clash with variables. The id of the event corresponding to the start of the program is named "_ev.init".
 
 Here is the complete list:
 
@@ -373,3 +375,40 @@ _nf._rf.nodeid:
 	equ 47
 _nf._poweroff:
 	equ 48
+
+_ev.init:
+    equ 65535
+_ev.button.backward:
+    equ 65534
+_ev.button.left:
+    equ 65533
+_ev.button.center:
+    equ 65532
+_ev.button.forward:
+    equ 65531
+_ev.button.right:
+    equ 65530
+_ev.buttons:
+    equ 65529
+_ev.prox:
+    equ 65528
+_ev.prox.comm:
+    equ 65527
+_ev.tap:
+    equ 65526
+_ev.acc:
+    equ 65525
+_ev.mic:
+    equ 65524
+_ev.sound.finished:
+    equ 65523
+_ev.temperature:
+    equ 65522
+_ev.rc5:
+    equ 65521
+_ev.motor:
+    equ 65520
+_ev.timer0:
+    equ 65519
+_ev.timer1:
+    equ 65518
