@@ -7,8 +7,8 @@
 
 # Send assembly program to Thymio
 
-import thymio
-import thymio.assembler
+from thymiodirect import Connection
+from thymiodirect.assembler import Assembler
 import serial
 import sys
 import os
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         if connected:
             # assemble program
             remote_node = th.remote_nodes[node_id]
-            a = thymio.assembler.Assembler(remote_node, asm)
+            a = Assembler(remote_node, asm)
             bc = a.assemble()
 
             # send bytecode and run it
@@ -65,12 +65,12 @@ if __name__ == "__main__":
     try:
         if not use_tcp:
             # try to open serial connection
-            with thymio.Connection.serial(discover_rate=2, refreshing_rate=0.5, debug=debug) as th:
+            with Connection.serial(discover_rate=2, refreshing_rate=0.5, debug=debug) as th:
                 run_until_executed(th)
     except serial.serialutil.SerialException:
         use_tcp = True
 
     if use_tcp:
         # try TCP on default local port
-        with thymio.Connection.tcp(discover_rate=2, refreshing_rate=0.5, debug=debug) as th:
+        with Connection.tcp(discover_rate=2, refreshing_rate=0.5, debug=debug) as th:
             run_until_executed(th)
