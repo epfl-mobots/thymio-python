@@ -342,7 +342,7 @@ class Assembler:
 
         re_blank = re.compile(r"^\s*(;.*)?$")
         re_label = re.compile(r"^\s*([\w_.]+:)\s*(;.*)?$")
-        re_instr = re.compile(r"^\s*([\w_.]+:)?\s*([a-z0-9.]+)([-a-z0-9\s._,+=]*)(;.*)?$")
+        re_instr = re.compile(r"^\s*([\w_.]+:)?\s*([a-z0-9.]+)([-a-zA-Z0-9\s._,+=]*)(;.*)?$")
         re_number = re.compile(r"^(-?[0-9]+|0x[0-9a-fA-F]+)$")
 
         for phase in (0, 1):
@@ -392,6 +392,7 @@ class Assembler:
                         label = None
                     continue
 
+                print("line", line)
                 raise Exception(f"Syntax error (line {i+1})")
 
         return bytecode
