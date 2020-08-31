@@ -7,11 +7,11 @@
 
 from setuptools import setup
 
-with open("README.md", "r") as fh:
+with open("help.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name='ThymioDirect-EPFL-Mobots',
+    name='thymiodirect',
     version='0.1.0',
     author='Yves Piguet',
     packages=['thymiodirect'],

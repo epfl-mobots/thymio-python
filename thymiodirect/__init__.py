@@ -17,8 +17,8 @@ Example
 -------
 
 # import the required classes
-from thymio import Connection
-from thymio import Thymio
+from thymiodirect import Connection
+from thymiodirect import Thymio
 
 # set the serial port the Thymio is connected to
 # (depending on your configuration, the default port is not what you want)
@@ -29,6 +29,9 @@ port = Connection.serial_default_port()
 th = Thymio(serial_port=port,
             on_connect=lambda node_id:print(f"{node_id} is connected"))
 th.connect()
+
+# get id of the first (or only) Thymio
+id = th.first_node()
 
 # get a variable
 th[id]["prox.horizontal"]
