@@ -78,20 +78,32 @@ class Thymio:
                     user_event_listener = self.thymio.user_event_listeners[node_id]
                     user_event_listener(node_id, event_id, event_args)
 
-            if self.thymio.use_tcp:
-                self.connection = Connection.tcp(host=self.thymio.host,
-                                                 port=self.thymio.tcp_port,
-                                                 discover_rate=self.thymio.discover_rate,
-                                                 refreshing_rate=self.thymio.refreshing_rate,
-                                                 loop=self.loop)
-            else:
-                self.connection = Connection.serial(port=self.thymio.serial_port,
-                                                    discover_rate=self.thymio.discover_rate,
-                                                    refreshing_rate=self.thymio.refreshing_rate,
-                                                    loop=self.loop)
+            def on_comm_error(error: Exception) -> None:
+                """
+                Forward error raised when communicating with the Thymio.
+                """
+                if self.thymio.on_comm_error is not None:
+                    self.thymio.on_comm_error(error)
+
+            try:
+                if self.thymio.use_tcp:
+                    self.connection = Connection.tcp(host=self.thymio.host,
+                                                     port=self.thymio.tcp_port,
+                                                     discover_rate=self.thymio.discover_rate,
+                                                     refreshing_rate=self.thymio.refreshing_rate,
+                                                     loop=self.loop)
+                else:
+                    self.connection = Connection.serial(port=self.thymio.serial_port,
+                                                        discover_rate=self.thymio.discover_rate,
+                                                        refreshing_rate=self.thymio.refreshing_rate,
+                                                        loop=self.loop)
+            except Exception as error:
+                on_comm_error(error)
+
             self.connection.on_connection_changed = on_connection_changed
             self.connection.on_variables_received = on_variables_received
             self.connection.on_user_event = on_user_event
+            self.connection.on_comm_error = on_comm_error
 
             self.loop.run_forever()
 
@@ -102,6 +114,7 @@ class Thymio:
                  tcp_port=None,
                  on_connect=None,
                  on_disconnect=None,
+                 on_comm_error=None,
                  refreshing_rate=0.1,
                  discover_rate=2,
                  loop=None):
@@ -111,6 +124,7 @@ class Thymio:
         self.tcp_port = tcp_port
         self.on_connect_cb = on_connect
         self.on_disconnect_cb = on_disconnect
+        self.on_comm_error = on_comm_error
         self.refreshing_rate = refreshing_rate
         self.discover_rate = discover_rate
         self.loop = loop or asyncio.get_event_loop()

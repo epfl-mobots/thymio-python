@@ -31,10 +31,22 @@ if __name__ == "__main__":
         serial_port = sys.argv[1]
 
     # connect
-    th = Thymio(use_tcp=use_tcp,
-                serial_port=serial_port,
-                host=host, tcp_port=tcp_port)
-    # constructor options: on_connect, on_disconnect, refreshing_rate, discover_rate, loop
+    try:
+        th = Thymio(use_tcp=use_tcp,
+                    serial_port=serial_port,
+                    host=host, tcp_port=tcp_port)
+        # constructor options: on_connect, on_disconnect, on_comm_error, refreshing_rate, discover_rate, loop
+    except Exception as error:
+        print(error)
+        exit(1)
+
+    def on_comm_error(error):
+        # loss of connection: display error and exit
+        print(error)
+        os._exit(1) # forced exit despite coroutines
+
+    th.on_comm_error = on_comm_error
+
     th.connect()
 
     # wait 2-3 sec until robots are known

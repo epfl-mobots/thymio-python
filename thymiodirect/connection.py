@@ -28,6 +28,7 @@ class InputThread(threading.Thread):
         self.io = io
         self.loop = loop
         self.handle_msg = handle_msg
+        self.comm_error = None
 
     def terminate(self) -> None:
         self.running = False
@@ -49,12 +50,16 @@ class InputThread(threading.Thread):
     def read_message(self) -> Message:
         """Read a complete message.
         """
-        payload_len = self.read_uint16()
-        source_node = self.read_uint16()
-        id = self.read_uint16()
-        payload = self.io.read(payload_len)
-        msg = Message(id, source_node, payload)
-        return msg
+        try:
+            payload_len = self.read_uint16()
+            source_node = self.read_uint16()
+            id = self.read_uint16()
+            payload = self.io.read(payload_len)
+            msg = Message(id, source_node, payload)
+            return msg
+        except Exception as error:
+            self.comm_error = error
+            raise error
 
     def run(self) -> None:
         """Input thread code.
@@ -166,6 +171,7 @@ class Connection:
         self.io = io
         self.debug = debug
         self.timeout = 3
+        self.comm_error = None
         self.host_node_id = host_node_id
         self.auto_handshake = False
         self.remote_node_set = set()  # set of id of nodes with handshake done
@@ -197,6 +203,10 @@ class Connection:
         # callback for notification that an event has been emitted
         # async fun(node_id, event_id, event_args)
         self.on_user_event = None
+
+        # callback for communication error notification
+        # fun(error)
+        self.on_comm_error = None
 
         # discover coroutine
         if discover_rate is not None:
@@ -473,7 +483,13 @@ class Connection:
         with self.output_lock:
             if self.debug:
                 print(">", msg)
-            self.io.write(msg.serialize())
+            try:
+                self.io.write(msg.serialize())
+            except Exception as error:
+                self.comm_error = error
+                if self.on_comm_error:
+                    self.on_comm_error(error)
+                raise error
 
     def get_target_node_var_total_size(self, target_node_id):
         """Get the total size of variables.
