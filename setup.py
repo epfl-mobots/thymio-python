@@ -12,7 +12,7 @@ with open("help.md", "r") as fh:
 
 setup(
     name='thymiodirect',
-    version='0.1.0',
+    version='0.1.1',
     author='Yves Piguet',
     packages=['thymiodirect'],
     description='Communication with Thymio II robot via serial port or TCP',

@@ -34,8 +34,11 @@ if __name__ == "__main__":
     try:
         th = Thymio(use_tcp=use_tcp,
                     serial_port=serial_port,
-                    host=host, tcp_port=tcp_port)
-        # constructor options: on_connect, on_disconnect, on_comm_error, refreshing_rate, discover_rate, loop
+                    host=host, tcp_port=tcp_port,
+                    # refreshing_coverage={"prox.horizontal", "button.center"},
+                   )
+        # constructor options: on_connect, on_disconnect, on_comm_error,
+        # refreshing_rate, refreshing_coverage, discover_rate, loop
     except Exception as error:
         print(error)
         exit(1)

@@ -13,7 +13,7 @@ Author: Yves Piguet, EPFL
 import asyncio
 import threading
 import time
-from typing import List, Optional
+from typing import List, Optional, Set, Tuple
 
 from thymiodirect.message import Message
 
@@ -153,6 +153,24 @@ class RemoteNode:
         self.var_data[offset:offset + len(data)] = data
         self.var_received = offset + len(data) >= self.expected_var_end
 
+    def data_span_for_variables(self, variables: Set[str]) -> Tuple[int, int]:
+        """Find the offset and length of the span covering the set of variables.
+        """
+        offset = None
+        length = 0
+        for name in variables:
+            if name not in self.var_offset:
+                raise KeyError(name)
+            if offset is None:
+                offset = self.var_offset[name]
+                length = self.var_size[name]
+            elif self.var_offset[name] < offset:
+                length += offset - self.var_offset[name]
+                offset = self.var_offset[name]
+                length = max(length, self.var_size[name])
+            else:
+                length = max(length, self.var_offset[name] + self.var_size[name] - offset)
+        return offset, length
 
 class Connection:
     """Connection to one or multiple devices.
@@ -163,7 +181,8 @@ class Connection:
 
     def __init__(self,
                  io,
-                 host_node_id=1, refreshing_rate=None, discover_rate=None,
+                 host_node_id=1,
+                 refreshing_rate=None, refreshing_coverage=None, discover_rate=None,
                  debug=False,
                  loop=None):
         self.loop = loop or asyncio.new_event_loop()
@@ -184,9 +203,13 @@ class Connection:
 
         self.output_lock = threading.Lock()
         self.refreshing_timeout = None
+        self.refreshing_data_coverage = None    # or set of variables to fetch
+        self.refreshing_data_span = None   # or (offset, length) (based on refreshing_data_coverage)
         self.refreshing_triggers = []   # threading.Event
         if refreshing_rate is not None:
             self.set_refreshing_rate(refreshing_rate)
+        if refreshing_coverage is not None:
+            self.set_refreshing_coverage(refreshing_coverage)
 
         # callback for (dis)connection
         # async fun(node_id, connect)
@@ -365,6 +388,13 @@ class Connection:
             for event in self.refreshing_triggers:
                 event.set()
 
+    def set_refreshing_coverage(self, variables: Optional[Set[str]] = None) -> int:
+        """Set the variables which should be covered by auto-refresh
+        (default: all).
+        """
+        self.refreshing_data_coverage = variables
+        self.refreshing_data_span = None
+
     async def handle_message(self, msg: Message) -> None:
         """Handle an input message.
         """
@@ -417,20 +447,28 @@ class Connection:
                 remote_node.add_var(msg.var_name, msg.var_size)
                 if len(remote_node.named_variables) >= remote_node.num_named_var:
                     # all variables are known, can start refreshing
+                    remote_node.reset_var_data()
                     async def do_refresh():
                         while not self.terminating:
                             if self.refreshing_timeout is None:
                                 await asyncio.sleep(0.1)
                             else:
                                 await asyncio.sleep(self.refreshing_timeout)
-                                self.get_variables(source_node)
+                                if self.refreshing_data_coverage is None:
+                                    self.get_variables(source_node)
+                                else:
+                                    if self.refreshing_data_span is None:
+                                        # update now that remote_node's variables are known
+                                        self.refreshing_data_span = remote_node.data_span_for_variables(self.refreshing_data_coverage)
+                                    if self.refreshing_data_span[1] > 0:
+                                        self.get_variables(source_node, self.refreshing_data_span[0], self.refreshing_data_span[1])
                             # assume disconnection upon timeout
                             current_time = time.time()
                             terminating_nodes = set()
                             for node_id in self.remote_node_set:
                                 with self.input_lock:
-                                    remote_node = self.remote_nodes[node_id]
-                                    if current_time - remote_node.last_msg_time > self.timeout:
+                                    terminated_node = self.remote_nodes[node_id]
+                                    if current_time - terminated_node.last_msg_time > self.timeout:
                                         terminating_nodes.add(node_id)
                             for node_id in terminating_nodes:
                                 self.remote_node_set.remove(node_id)
@@ -442,6 +480,7 @@ class Connection:
         elif msg.id == Message.ID_VARIABLES:
             with self.input_lock:
                 remote_node = self.remote_nodes[source_node]
+                print("VARIABLES", "offset", msg.var_offset, "size", len(msg.var_data))
                 remote_node.set_var_data(msg.var_offset, msg.var_data)
             if self.on_variables_received and remote_node.var_received:
                 await self.on_variables_received(source_node)

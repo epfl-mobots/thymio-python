@@ -91,11 +91,13 @@ class Thymio:
                                                      port=self.thymio.tcp_port,
                                                      discover_rate=self.thymio.discover_rate,
                                                      refreshing_rate=self.thymio.refreshing_rate,
+                                                     refreshing_coverage=self.thymio.refreshing_coverage,
                                                      loop=self.loop)
                 else:
                     self.connection = Connection.serial(port=self.thymio.serial_port,
                                                         discover_rate=self.thymio.discover_rate,
                                                         refreshing_rate=self.thymio.refreshing_rate,
+                                                        refreshing_coverage=self.thymio.refreshing_coverage,
                                                         loop=self.loop)
             except Exception as error:
                 on_comm_error(error)
@@ -116,6 +118,7 @@ class Thymio:
                  on_disconnect=None,
                  on_comm_error=None,
                  refreshing_rate=0.1,
+                 refreshing_coverage=None,
                  discover_rate=2,
                  loop=None):
         self.use_tcp = use_tcp
@@ -126,6 +129,7 @@ class Thymio:
         self.on_disconnect_cb = on_disconnect
         self.on_comm_error = on_comm_error
         self.refreshing_rate = refreshing_rate
+        self.refreshing_coverage = refreshing_coverage
         self.discover_rate = discover_rate
         self.loop = loop or asyncio.get_event_loop()
         self.thymio_proxy = None
