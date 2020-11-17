@@ -388,7 +388,7 @@ class Connection:
             for event in self.refreshing_triggers:
                 event.set()
 
-    def set_refreshing_coverage(self, variables: Optional[Set[str]] = None) -> int:
+    def set_refreshing_coverage(self, variables: Optional[Set[str]] = None) -> None:
         """Set the variables which should be covered by auto-refresh
         (default: all).
         """
@@ -480,7 +480,6 @@ class Connection:
         elif msg.id == Message.ID_VARIABLES:
             with self.input_lock:
                 remote_node = self.remote_nodes[source_node]
-                print("VARIABLES", "offset", msg.var_offset, "size", len(msg.var_data))
                 remote_node.set_var_data(msg.var_offset, msg.var_data)
             if self.on_variables_received and remote_node.var_received:
                 await self.on_variables_received(source_node)
