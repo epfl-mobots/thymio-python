@@ -41,8 +41,13 @@ class ThymioSerialPort:
         self.device = device if device else port.device if port else None
         self.wireless = wireless
 
+    def __str__(self):
+        return ("Serial port" if self.port is None
+                else "Thymio wireless" if self.wireless
+                else "Thymio")
+
     def __repr__(self):
-        return f"Thymio{' wireless' if self.wireless else ''} .device={self.device}"
+        return f"{str(self)} .device={self.device}"
 
     @staticmethod
     def get_ports() -> List["ThymioSerialPort"]:
