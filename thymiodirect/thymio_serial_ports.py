@@ -6,12 +6,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
-List of serial ports recognized as connected to a Thymio.
+List of serial ports recognized as connected to a Thymio, or, if not
+supported by the platform, of all serial ports.
 
 Usage
 -----
 
-from thymiodirect.thymio_serial import ThymioSerialPort
+from thymiodirect.thymio_serial_ports import ThymioSerialPort
 ports = ThymioSerialPort.get_ports()
 port0 = ports[0]
 device = port0.device
@@ -20,9 +21,7 @@ print(f"Thymio{' wireless' if port0.wireless else ''} ({device})")
 
 """
 
-import serial.tools.list_ports_common
-from serial.tools.list_ports import comports
-from typing import Awaitable, Callable, List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
 
 USB_VID_EPFL = "0617"
 USB_PID_THYMIO = "000A"
@@ -34,9 +33,12 @@ USB_VID_PID = {
 
 class ThymioSerialPort:
 
-    def __init__(self, port: serial.tools.list_ports_common.ListPortInfo, wireless: bool):
+    def __init__(self,
+                 port: Optional["serial.tools.list_ports_common.ListPortInfo"] = None,
+                 device: Optional[str] = None,
+                 wireless: Optional[bool] = False):
         self.port = port
-        self.device = port.device
+        self.device = device if device else port.device if port else None
         self.wireless = wireless
 
     def __repr__(self):
@@ -52,9 +54,21 @@ class ThymioSerialPort:
                 if vid in hwid and pid in hwid:
                     return vid, pid
 
-        devices = [
-            ThymioSerialPort(port, check_hwid(port.hwid)[1] == USB_PID_THYMIO_WIRELESS)
-            for port in comports()
-            if check_hwid(port.hwid)
-        ]
-        return devices
+        try:
+            import serial.tools.list_ports_common
+            from serial.tools.list_ports import comports
+            ports = [
+                ThymioSerialPort(port=port,
+                                 wireless = check_hwid(port.hwid)[1] == USB_PID_THYMIO_WIRELESS)
+                for port in comports()
+                if check_hwid(port.hwid)
+            ]
+        except:
+            # Probably thymiodirect.thymio_serial_ports isn't supported,
+            # e.g. on macOS 11 as of November 2020
+            from thymiodirect.connection import Connection
+            ports = [
+                ThymioSerialPort(device=device)
+                for device in Connection.serial_ports()
+            ]
+        return ports
