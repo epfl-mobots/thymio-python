@@ -13,7 +13,7 @@ Author: Yves Piguet, EPFL
 import asyncio
 import threading
 import time
-from typing import List, Optional, Set, Tuple
+from typing import Awaitable, Callable, List, Optional, Set, Tuple
 
 from thymiodirect.message import Message
 
@@ -30,7 +30,8 @@ class InputThread(threading.Thread):
         self.handle_msg = handle_msg
         self.comm_error = None
 
-    def terminate(self) -> None:
+    def terminate(self, on_terminated=None) -> None:
+        self.on_terminated = on_terminated
         self.running = False
 
     def read_uint16(self) -> int:
@@ -69,9 +70,11 @@ class InputThread(threading.Thread):
                 msg = self.read_message()
                 msg.decode()
                 if self.loop and self.handle_msg:
-                    asyncio.ensure_future(self.handle_msg(msg), loop=self.loop)
+                    self.loop.create_task(self.handle_msg(msg))
             except TimeoutError:
                 pass
+        if self.on_terminated:
+            self.on_terminated()
 
 
 class RemoteNode:
@@ -185,8 +188,11 @@ class Connection:
                  refreshing_rate=None, refreshing_coverage=None, discover_rate=None,
                  debug=False,
                  loop=None):
-        self.loop = loop or asyncio.new_event_loop()
-        self.terminating = False
+        self.has_own_loop = loop is None
+        if self.has_own_loop:
+            self.loop = asyncio.new_event_loop()
+        else:
+            self.loop = loop
         self.io = io
         self.debug = debug
         self.timeout = 3
@@ -197,11 +203,14 @@ class Connection:
         self.remote_nodes = {}  # key: node_id
 
         self.input_lock = threading.Lock()
-        self.input_thread = InputThread(self.io, self.loop,
-                                        lambda msg: self.handle_message(msg))
+        self.input_thread = InputThread(self.io,
+                                        loop=self.loop,
+                                        handle_msg=lambda msg: self.handle_message(msg))
         self.input_thread.start()
 
         self.output_lock = threading.Lock()
+        self.shutting_down = False
+        self.tasks = set()
         self.refreshing_timeout = None
         self.refreshing_data_coverage = None    # or set of variables to fetch
         self.refreshing_data_span = None   # or (offset, length) (based on refreshing_data_coverage)
@@ -213,15 +222,15 @@ class Connection:
 
         # callback for (dis)connection
         # async fun(node_id, connect)
-        self.on_connection_changed = None
+        self.on_connection_changed: Optional[Callable[[int, bool], Awaitable[None]]] = None
 
         # callback for notification that variables have been received
         # async fun(node_id)
-        self.on_variables_received = None
+        self.on_variables_received: Optional[Callable[[int], Awaitable[None]]] = None
 
         # callback for notification about execution state
         # async fun(node_id, pc, flags)
-        self.on_execution_state_changed = None
+        self.on_execution_state_changed: Optional[Callable[[int, int, int], Awaitable[None]]] = None
 
         # callback for notification that an event has been emitted
         # async fun(node_id, event_id, event_args)
@@ -234,10 +243,13 @@ class Connection:
         # discover coroutine
         if discover_rate is not None:
             async def discover():
-                while not self.terminating:
-                    self.handshake()
-                    await asyncio.sleep(discover_rate)
-            self.loop.create_task(discover())
+                while not self.shutting_down:
+                    try:
+                        self.handshake()
+                        await asyncio.sleep(discover_rate)
+                    except asyncio.CancelledError:
+                        break
+            self.tasks.add(self.loop.create_task(discover()))
 
     def close(self) -> None:
         """Close connection.
@@ -248,23 +260,34 @@ class Connection:
     def shutdown(self) -> None:
         """Shutdown everything.
         """
-        self.terminating = True
-        self.input_thread.terminate()
+        if self.shutting_down:
+            # once is enough
+            return
 
-    def run_forever(self) -> None:
-        """Run asyncio loop forever.
+        self.shutting_down = True
+
+        def on_terminated():
+            self.close()
+
+        self.input_thread.terminate(on_terminated)
+
+    def run_tasks(self) -> None:
+        """Run asyncio loop until all the tasks have finished.
         """
-        self.loop.run_forever()
+        async def all_tasks():
+            return await asyncio.gather(*self.tasks, return_exceptions=True)
+        self.loop.run_until_complete(all_tasks())
+        if self.has_own_loop:
+            self.loop.stop()
 
     def __del__(self) -> None:
         self.shutdown()
-        self.close()
 
     def __enter__(self) -> None:
         return self
 
     def __exit__(self, type, value, traceback) -> None:
-        self.close()
+        self.shutdown()
 
     @staticmethod
     def serial_ports() -> List[str]:
@@ -449,34 +472,38 @@ class Connection:
                     # all variables are known, can start refreshing
                     remote_node.reset_var_data()
                     async def do_refresh():
-                        while not self.terminating:
-                            if self.refreshing_timeout is None:
-                                await asyncio.sleep(0.1)
-                            else:
-                                await asyncio.sleep(self.refreshing_timeout)
-                                if self.refreshing_data_coverage is None:
-                                    self.get_variables(source_node)
+                        while not self.shutting_down:
+                            try:
+                                if self.refreshing_timeout is None:
+                                    await asyncio.sleep(0.1)
                                 else:
-                                    if self.refreshing_data_span is None:
-                                        # update now that remote_node's variables are known
-                                        self.refreshing_data_span = remote_node.data_span_for_variables(self.refreshing_data_coverage)
-                                    if self.refreshing_data_span[1] > 0:
-                                        self.get_variables(source_node, self.refreshing_data_span[0], self.refreshing_data_span[1])
-                            # assume disconnection upon timeout
-                            current_time = time.time()
-                            terminating_nodes = set()
-                            for node_id in self.remote_node_set:
-                                with self.input_lock:
-                                    terminated_node = self.remote_nodes[node_id]
-                                    if current_time - terminated_node.last_msg_time > self.timeout:
-                                        terminating_nodes.add(node_id)
-                            for node_id in terminating_nodes:
-                                self.remote_node_set.remove(node_id)
-                                if self.on_connection_changed:
-                                    await self.on_connection_changed(node_id, False)
-                                del self.remote_nodes[node_id]
-                        self.loop.stop()
-                    self.loop.create_task(do_refresh())
+                                    await asyncio.sleep(self.refreshing_timeout)
+                                    if self.refreshing_data_coverage is None:
+                                        self.get_variables(source_node)
+                                    else:
+                                        if self.refreshing_data_span is None:
+                                            # update now that remote_node's variables are known
+                                            self.refreshing_data_span = remote_node.data_span_for_variables(self.refreshing_data_coverage)
+                                        if self.refreshing_data_span[1] > 0:
+                                            self.get_variables(source_node, self.refreshing_data_span[0], self.refreshing_data_span[1])
+                                if self.shutting_down:
+                                    break
+                                # assume disconnection upon timeout
+                                current_time = time.time()
+                                terminating_nodes = set()
+                                for node_id in self.remote_node_set:
+                                    with self.input_lock:
+                                        terminated_node = self.remote_nodes[node_id]
+                                        if current_time - terminated_node.last_msg_time > self.timeout:
+                                            terminating_nodes.add(node_id)
+                                for node_id in terminating_nodes:
+                                    self.remote_node_set.remove(node_id)
+                                    if self.on_connection_changed:
+                                        await self.on_connection_changed(node_id, False)
+                                    del self.remote_nodes[node_id]
+                            except asyncio.CancelledError:
+                                break
+                    self.tasks.add(self.loop.create_task(do_refresh()))
         elif msg.id == Message.ID_VARIABLES:
             with self.input_lock:
                 remote_node = self.remote_nodes[source_node]
@@ -506,7 +533,8 @@ class Connection:
             # user event sent by emit
             if self.on_user_event:
                 await self.on_user_event(source_node, msg.id, msg.user_event_arg)
-        self.remote_nodes[source_node].last_msg_time = time.time()
+        with self.input_lock:
+            self.remote_nodes[source_node].last_msg_time = time.time()
 
     def uuid_to_node_id(self, uuid: str) -> int:
         """Get node id from device uuid.

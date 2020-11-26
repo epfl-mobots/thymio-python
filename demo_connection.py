@@ -68,8 +68,12 @@ if __name__ == "__main__":
             th.run(node_id)
 
     async def on_variables_received(node_id):
+        """Display prox.horizontal and quit upon button.center.
+        """
         try:
             print(f"Node {node_id}: prox.horizontal = {th[node_id]['prox.horizontal']}")
+            if th[node_id]["button.center"]:
+                th.shutdown()
         except KeyError:
             print("on_variables_received", th.remote_nodes[node_id])
 
@@ -77,16 +81,13 @@ if __name__ == "__main__":
         print(f"Node {node_id}: rcv event {event_id}, value={event_args}")
 
     def run_demo(th):
+        """Display information, set top rgb led to yellow,
+        and display prox sensors until button.center is touched.
+        """
         th.on_connection_changed = on_connection_changed
         th.on_variables_received = on_variables_received
         th.on_user_event = on_user_event
-        try:
-            th.run_forever()
-        except KeyboardInterrupt:
-            th.shutdown()
-            th.run_forever()
-            th.close()
-
+        th.run_tasks()
 
     use_tcp = False
     debug = False

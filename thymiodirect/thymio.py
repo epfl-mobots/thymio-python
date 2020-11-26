@@ -40,7 +40,7 @@ class Thymio:
 
             self.thymio = thymio
             self.connection = None
-            self.loop = asyncio.get_event_loop()
+            self.loop = asyncio.new_event_loop()
             self.nodes = set()
 
         def run(self):
@@ -109,6 +109,12 @@ class Thymio:
 
             self.loop.run_forever()
 
+        def shutdown(self):
+            """
+            Shut down the event loop.
+            """
+            self.loop.call_soon(self.loop.stop)
+
     def __init__(self,
                  use_tcp=False,
                  serial_port=None,
@@ -147,6 +153,10 @@ class Thymio:
         self.thread.start()
         while self.thymio_proxy is None or len(self.thymio_proxy.nodes) == 0:
             time.sleep(0.1)
+
+    def disconnect(self):
+        self.thymio_proxy.shutdown()
+        self.thymio_proxy.connection.shutdown()
 
     def nodes(self):
         """Get set of ids of node currentlty connected.

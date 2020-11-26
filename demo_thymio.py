@@ -10,6 +10,7 @@
 from thymiodirect import Thymio
 import sys
 import os
+import time
 
 if __name__ == "__main__":
 
@@ -67,8 +68,9 @@ if __name__ == "__main__":
 
     # set a function called after new variable values have been fetched
     prox_prev = 0
+    done = False
     def obs(node_id):
-        global prox_prev
+        global prox_prev, done
         prox = (th[node_id]["prox.horizontal"][5] - th[node_id]["prox.horizontal"][2]) // 10
         if prox != prox_prev:
             th[node_id]["motor.left.target"] = prox
@@ -83,6 +85,10 @@ if __name__ == "__main__":
             prox_prev = prox
         if th[node_id]["button.center"]:
             print("button.center")
-            os._exit(0) # forced exit despite coroutines
+            done = True
 
     th.set_variable_observer(id, obs)
+
+    while not done:
+        time.sleep(0.1)
+    th.disconnect()
