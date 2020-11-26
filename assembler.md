@@ -1,5 +1,4 @@
-Aseba bytecode assembler
-========================
+# Aseba bytecode assembler
 
 A simple assembler is provided for the Aseba virtual machine (VM). The assembler input can contain VM instructions, labels, symbols, expressions, pseudo-instructions, and comments.
 
@@ -11,190 +10,193 @@ The bytecode begins with a table at address 0 with the addresses of event handle
 
 The location of special variables, the id of native functions and of events depend on the robot and are subject to change between firmware releases. Symbols are predefined to use values obtained from the robot itself (see below).
 
-Assembler input syntax
-----------------------
+## Assembler input syntax
 
 An assembler line can contain a label followed by a colon, an instruction or pseudo-instruction with its comma-separated or space-separated arguments, and a comment. Any or all of these elements can be missing. Arguments can be numbers in decimal or hexadecimal (prefixed with 0x), constants, or arithmetic expressions made of numbers, constants, and + and - operators, without space or parentheses. Constants are defined as labels or with the pseudo-instruction equ (see below). They can be used before their definition.
 
 Examples:
-
+```
 loop: push 123  ; some comment
 loop: push 123
 loop:
       push 123
+````
 
-Pseudo-instructions
--------------------
+## Pseudo-instructions
 
+Constants, useful mainly for the initial event table:
+```
 dc val1, val2, ...
+````
 
-  constants, useful mainly for the initial event table
-
+Symbol definition:
+```
 symbol: equ value
-
-  define symbol as equivalent to value
+```
 
 Instructions
 ------------
 
-push.s value
+Push a 12-bit signed value onto the stack
 
-    push a 12-bit signed value onto the stack
+	push.s value
 
-push value
+Push a 16-bit signed value onto the stack
 
-    push a 16-bit signed value onto the stack
+	push value
 
-load address
+Push a value fetched at a fixed address
 
-    push a value fetched at a fixed address
+	load address
 
-store address
+Pop a value and store it at a fixed address
 
-    pop a value and store it at a fixed address
+	store address
 
-load.ind address
+Pop a value, add it to a fixed address, fetch the value there and push it onto the stack
 
-    pop a value, add it to a fixed address, fetch the value there and push it onto the stack
+	load.ind address
 
-store.ind address
 
-    pop a value, add it to a fixed address, pop a second value and store it there
+Pop a value, add it to a fixed address, pop a second value and store it there
 
-neg
+	store.ind address
 
-    change the sign of the top stack element
+Change the sign of the top stack element
 
-abs
+	neg
 
-    take the absolute value of the top stack element
+Take the absolute value of the top stack element
 
-bitnot
+	abs
 
-    take the one's complement of the top stack element
+Take the one's complement of the top stack element
 
-not
+	bitnot
 
-    take the logical "not" of the top stack element (not implemented in the VM, must not be used)
+Take the logical _not_ of the top stack element (not implemented in the VM, _must not be used_)
 
-sl
+	not
 
-    pop 2 elements a and b and push a << b (a shifted to the left by b bits)
+Pop 2 elements a and b and push a << b (`a` shifted to the left by `b` bits)
 
-asr
+	sl
 
-    pop 2 elements a and b and push a >> b (a shifted to the right by b bits with sign bit replicated)
+Pop 2 elements a and b and push a >> b (arithmetic shift right, i.e. signed division by a power of 2: `a` shifted to the right by `b` bits with sign bit replicated)
 
-add
+	asr
 
-    pop 2 elements a and b and push a + b
+Pop 2 elements `a` and `b` and push `a + b`
 
-sub
+	add
 
-    pop 2 elements a and b and push a - b
+Pop 2 elements `a` and `b` and push `a - b`
 
-mult
+	sub
 
-    pop 2 elements a and b and push a * b
+Pop 2 elements `a` and `b` and push `a * b`
 
-div
+	mult
 
-    pop 2 elements a and b and push a / b
+Pop 2 elements `a` and `b` and push `a / b`
 
-mod
+	div
 
-    pop 2 elements a and b and push a % b (a modulo b)
+pop 2 elements `a` and `b` and push `a % b` (the remainder of `a` divided by `b`)
 
-bitor
+	mod
 
-    pop 2 elements a and b and push a | b (bitwise or)
+pop 2 elements `a` and `b` and push `a | b` (bitwise or)
 
-bitxor
+	bitor
 
-    pop 2 elements a and b and push a ^ b (bitwise exclusive or)
+pop 2 elements `a` and `b` and push `a ^ b` (bitwise exclusive or)
 
-bitand
+	bitxor
 
-    pop 2 elements a and b and push a & b (bitwise and)
+pop 2 elements `a` and `b` and push `a & b` (bitwise and)
 
-eq
+	bitand
 
-    pop 2 elements a and b and push 1 if a == b, 0 otherwise
+pop 2 elements `a` and `b` and push 1 if `a == b`, 0 otherwise
 
-ne
+	eq
 
-    pop 2 elements a and b and push 1 if a != b, 0 otherwise
+pop 2 elements `a` and `b` and push 1 if `a != b`, 0 otherwise
 
-gt
+	ne
 
-    pop 2 elements a and b and push 1 if a > b, 0 otherwise
+pop 2 elements `a` and `b` and push 1 if `a > b`, 0 otherwise
 
-ge
+	gt
 
-    pop 2 elements a and b and push 1 if a >= b, 0 otherwise
+pop 2 elements `a` and `b` and push 1 if `a >= b`, 0 otherwise
 
-lt
+	ge
 
-    pop 2 elements a and b and push 1 if a < b, 0 otherwise
+pop 2 elements `a` and `b` and push 1 if `a < b`, 0 otherwise
 
-le
+	lt
 
-    pop 2 elements a and b and push 1 if a <= b, 0 otherwise
+pop 2 elements `a` and `b` and push 1 if `a <= b`, 0 otherwise
 
-or
+	le
 
-    pop 2 elements a and b and push 1 if a or b != 0, 0 otherwise
+pop 2 elements `a` and `b` and push 1 if `a` or `b != 0`, 0 otherwise
 
-and
+	or
 
-    pop 2 elements a and b and push 1 if a and b != b, 0 otherwise
+pop 2 elements `a` and `b` and push 1 if `a` and `b != b`, 0 otherwise
 
-jump address
+	and
 
-    go to the specified absolute address in the bytecode
+go to the specified absolute address in the bytecode
 
-jump.if.not condition address
+	jump address
 
-    pop 2 elements, apply a condition to them (one of the logical operators eq, ne, gt, ge, lt, le, or, and), and go to the specified absolute address if the result is false (0)
+pop 2 elements, apply a condition to them (one of the logical operators `eq`, `ne`, `gt`, `ge`, `lt`, `le`, `or`, `and`), and go to the specified absolute address if the result is false (0)
 
-do.jump.when.not condition address
+	jump.if.not condition address
 
-    pop 2 elements and apply a condition to them (one of the logical operators eq, ne, gt, ge, lt, le, or, and); if the result is false (0), go to that address and modify the instruction to dont.jump.when.not. This is used to implement the "when" Aseba statement
+pop 2 elements and apply a condition to them (one of the logical operators `eq`, `ne`, `gt`, `ge`, `lt`, `le`, `or`, `and`); if the result is false (0), go to that address and modify the instruction to `dont.jump.when.not`. This is used to implement the `when` Aseba statement.
 
-do.jump.always condition address
+	do.jump.when.not condition address
 
-    pop 2 elements and apply a condition to them (one of the logical operators eq, ne, gt, ge, lt, le, or, and); if the result is true (not 0), modify the instruction to do.jump.when.not. This is the do.jump.when.not instruction once it has been triggered
+pop 2 elements and apply a condition to them (one of the logical operators `eq`, `ne`, `gt`, `ge`, `lt`, `le`, `or`, `and`); if the result is true (not 0), modify the instruction to `do.jump.when.not`. This is the `do.jump.when.not` instruction once it has been triggered.
 
-emit id, address, size
+	do.jump.always condition address
 
-    emit an event with the specified identifier and data at the specified address with the specified size
+emit an event with the specified identifier and data at the specified address with the specified size
 
-callnat id
+	emit id, address, size
 
-    call the native function specified by its id
+call the native function specified by its id
 
-callsub address
+	callnat id
 
-    call a subroutine at the specified absolute address in the bytecode
+call a subroutine at the specified absolute address in the bytecode
 
-ret
+	callsub address
 
-    return from a subroutine (pop an address from the stack and go there)
+return from a subroutine (pop an address from the stack and go there)
 
-Predefined definitions
-----------------------
+	ret
+
+## Predefined definitions
 
 The set of definitions contains predefined values for the variables, native functions and events, retrieved from the Thymio. Variables have the same name as in Aseba. Two special definitions characterize the area of memory available for user variables:
 
-_userdata: address of the first word available for user variables
-_topdata: address following the last word available for user variables
+`_userdata`: address of the first word available for user variables
 
-The id of native functions is the same as the name used in Aseba, prefixed with "_nf." to avoid any name clash with variables.
+`_topdata`: address following the last word available for user variables
 
-The id of local events is the same as the name used in Aseba, prefixed with "_ev." to avoid any name clash with variables. The id of the event corresponding to the start of the program is named "_ev.init".
+The id of native functions is the same as the name used in Aseba, prefixed with `_nf.` to avoid any name clash with variables.
 
-Here is the complete list:
+The id of local events is the same as the name used in Aseba, prefixed with `_ev.` to avoid any name clash with variables. The id of the event corresponding to the start of the program is named `_ev.init`
 
+Here is the complete list, as of November 2020. It isn't coded in the Python module, but retrieved from the Thymio because the exact values depend on the firmware version.
+
+```
 _id:
 	equ 0
 event.source:
@@ -253,27 +255,37 @@ motor.left.pwm:
 	equ 94
 motor.right.pwm:
 	equ 95
-acc:
+_integrator:
 	equ 96
-temperature:
-	equ 99
-rc5.address:
+acc:
+	equ 97
+leds.top:
 	equ 100
-rc5.command:
-	equ 101
-mic.intensity:
-	equ 102
-mic.threshold:
+leds.bottom.left:
 	equ 103
+leds.bottom.right:
+	equ 106
+leds.circle:
+	equ 109
+temperature:
+	equ 117
+rc5.address:
+	equ 118
+rc5.command:
+	equ 119
+mic.intensity:
+	equ 120
+mic.threshold:
+	equ 121
 mic._mean:
-	equ 104
+	equ 122
 timer.period:
-	equ 105
+	equ 123
 acc._tap:
-	equ 107
+	equ 125
 
 _userdata:
-	equ 108
+	equ 126
 _topdata:
 	equ 620
 
@@ -412,3 +424,4 @@ _ev.timer0:
     equ 65519
 _ev.timer1:
     equ 65518
+```
