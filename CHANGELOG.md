@@ -2,6 +2,13 @@
 
 Notable changes of thymiodirect. Release versions refer to [https://pypi.org/project/thymiodirect/].
 
+## [Unreleased]
+
+- Clean teardown of event loops upon termination.
+- Implementation overview in readme.md.
+- Assembler documentation revised and converted to markdown.
+- New method `thymiodirect.thymio_serial_ports.ThymioSerialPort.get_ports()` to get the serial ports a Thymio is connected to.
+
 ## [0.1.2] - 2020-11-17
 
 ### Added
