@@ -83,3 +83,17 @@ th = Thymio(serial_port=port,
             refreshing_rate=0.2,
             refreshing_coverage={"prox.horizontal", "prox.ground"})
 ```
+
+## Implementation overview
+
+Communication is implemented mainly in `connection.py` and the higher-level `thymio.py`. They both rely on asyncio event loops.
+
+### connection.py
+
+One `Connection` object lets you communicate via a serial or tcp connection to one or multiple robots (nodes). The `Connection` object opens the connection, has a single event loop which it can receive as constructor parameter or create and delete itself, sends messages, and cache the state of nodes in a dict of `RemoteNode` objects (key is the node id). Message reception is done asynchronously in a thread created by an `InputThread` object (one per `Connection` object). The `InputThread` object has a reference to its `Connection`'s event loop and handles the messages it receives via a callback in the context of the `Connection` object, thanks to `asyncio.ensure_future`.
+
+The capability to connect to multiple robots depends on the communication channel. With a plain USB cable, you can connect only to a single Thymio II. With a USB wireless dongle, you can pair the dongle to multiple robots. Launch Thymio Suite and connect the dongle, select the tool _Pair a Wireless Thymio to a Wireless dongle_, click the button _Advanced Mode_, and for each robot, connect it with a USB cable and click the button _Pair!_ without changing the channel or network identifier. Please refer to the Thymio Suite documentation for more details. With a TCP connection, _asebaswitch_ can be launched with multiple robots and the `Connection` object establishes a single TCP stream to it where the messages for all the robots transit.
+
+### thymio.py
+
+A `Thymio` object provides a nicer interface to robots which hides async methods and event loops. It creates a `Connection` object and sets up all the hooks required to fetch information, get and set variables, and assemble and execute programs provided as Thymio bytecode assembler. To communicate with it, a `_ThymioProx` object is created, which has its own event loop and async functions in a separate thread. A callback can be registered to be executed once variables have been updated to allow for a feedback loop without superfluous delay.
