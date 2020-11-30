@@ -19,6 +19,11 @@ device = port0.device
 
 print(f"Thymio{' wireless' if port0.wireless else ''} ({device})")
 
+or just
+
+from thymiodirect.thymio_serial_ports import ThymioSerialPort
+device = ThymioSerialPort.default_device()
+
 """
 
 from typing import List, Optional, Tuple
@@ -47,7 +52,7 @@ class ThymioSerialPort:
                 else "Thymio")
 
     def __repr__(self):
-        return f"{str(self)} .device={self.device}"
+        return f"ThymioSerialPort(port={repr(self.port)}, device={repr(self.device)}, wireless={self.wireless})"
 
     @staticmethod
     def get_ports() -> List["ThymioSerialPort"]:
@@ -77,3 +82,12 @@ class ThymioSerialPort:
                 for device in Connection.serial_ports()
             ]
         return ports
+
+    @staticmethod
+    def default_device() -> str:
+        """Get the device string of the first Thymio serial port.
+        """
+        ports = ThymioSerialPort.get_ports()
+        if len(devices) < 1:
+            raise Exception("No serial device for Thymio found")
+        return ports[0].device
