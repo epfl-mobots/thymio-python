@@ -12,13 +12,13 @@ help(thymiodirect)
 
 Import the required classes:
 ```
-from thymiodirect import Connection
+from thymiodirect.thymio_serial_ports import ThymioSerialPort
 from thymiodirect import Thymio
 ```
 
-Set the serial port the Thymio is connected to (depending on your configuration, the default port is not what you want):
+Get the serial port the Thymio is connected to (depending on your configuration, the default port is not what you want):
 ```
-port = Connection.serial_default_port()
+port = ThymioSerialPort.default_device()
 ```
 
 Create a `Thymio` connection object with a callback to be notified when the robot is ready and start the connection (or just wait a few seconds):

@@ -17,12 +17,12 @@ Example
 -------
 
 # import the required classes
-from thymiodirect import Connection
+from thymiodirect.thymio_serial_ports import ThymioSerialPort
 from thymiodirect import Thymio
 
-# set the serial port the Thymio is connected to
+# get the serial port the Thymio is connected to
 # (depending on your configuration, the default port is not what you want)
-port = Connection.serial_default_port()
+port = ThymioSerialPort.default_device()
 
 # create a Thymio connection object with a callback to be notified when
 # the robot is ready and start the connection (or just wait a few seconds)
