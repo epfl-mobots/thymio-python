@@ -107,13 +107,13 @@ class Thymio:
             self.connection.on_user_event = on_user_event
             self.connection.on_comm_error = on_comm_error
 
-            self.loop.run_forever()
+            self.connection.run_tasks()
 
         def shutdown(self):
             """
             Shut down the event loop.
             """
-            self.loop.call_soon(self.loop.stop)
+            self.connection.shutdown()
 
     def __init__(self,
                  use_tcp=False,
