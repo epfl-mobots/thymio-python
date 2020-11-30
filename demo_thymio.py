@@ -8,6 +8,7 @@
 # Test of the communication with Thymio via serial port
 
 from thymiodirect import Thymio
+from thymiodirect.thymio_serial_ports import ThymioSerialPort
 import sys
 import os
 import time
@@ -30,6 +31,15 @@ if __name__ == "__main__":
             sys.exit(0)
         # serial port: argv[1] = serial port
         serial_port = sys.argv[1]
+
+    # use thymio_serial_ports for default Thymio serial port
+    if not tcp_port and serial_port is None:
+        thymio_serial_ports = ThymioSerialPort.get_ports()
+        if len(thymio_serial_ports) > 0:
+            serial_port = thymio_serial_ports[0].device
+            print("Thymio serial ports:")
+            for thymio_serial_port in thymio_serial_ports:
+                print(" ", thymio_serial_port, thymio_serial_port.device)
 
     # connect
     try:
