@@ -92,6 +92,8 @@ class RemoteNode:
         self.last_msg_time = 0  # time.time()
         self.handshake_done = False
         self.name = None
+        self.bytecode_size = None
+        self.stack_size = None
         self.max_var_size = None
         self.num_named_var = None
         self.num_local_events = None
