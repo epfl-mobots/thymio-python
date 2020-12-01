@@ -27,6 +27,7 @@ device = ThymioSerialPort.default_device()
 """
 
 from typing import List, Optional, Tuple
+import serial.tools.list_ports_common
 
 USB_VID_EPFL = "0617"
 USB_PID_THYMIO = "000A"
@@ -36,10 +37,11 @@ USB_VID_PID = {
     (USB_VID_EPFL, USB_PID_THYMIO_WIRELESS),
 }
 
+
 class ThymioSerialPort:
 
     def __init__(self,
-                 port: Optional["serial.tools.list_ports_common.ListPortInfo"] = None,
+                 port: Optional[serial.tools.list_ports_common.ListPortInfo] = None,
                  device: Optional[str] = None,
                  wireless: Optional[bool] = False):
         self.port = port
@@ -65,17 +67,16 @@ class ThymioSerialPort:
                     return vid, pid
 
         try:
-            import serial.tools.list_ports_common
             from serial.tools.list_ports import comports
             ports = [
                 ThymioSerialPort(port=port,
-                                 wireless = check_hwid(port.hwid)[1] == USB_PID_THYMIO_WIRELESS)
+                                 wireless=check_hwid(port.hwid)[1] == USB_PID_THYMIO_WIRELESS)
                 for port in comports()
                 if check_hwid(port.hwid)
             ]
-        except:
+        except ValueError:
             # Probably thymiodirect.thymio_serial_ports isn't supported,
-            # e.g. on macOS 11 as of November 2020
+            # e.g. on macOS 11 as of December 2020
             from thymiodirect.connection import Connection
             ports = [
                 ThymioSerialPort(device=device)
@@ -88,6 +89,6 @@ class ThymioSerialPort:
         """Get the device string of the first Thymio serial port.
         """
         ports = ThymioSerialPort.get_ports()
-        if len(devices) < 1:
+        if len(ports) < 1:
             raise Exception("No serial device for Thymio found")
         return ports[0].device

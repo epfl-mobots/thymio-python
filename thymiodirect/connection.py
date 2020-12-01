@@ -177,6 +177,7 @@ class RemoteNode:
                 length = max(length, self.var_offset[name] + self.var_size[name] - offset)
         return offset, length
 
+
 class Connection:
     """Connection to one or multiple devices.
     """
@@ -310,7 +311,8 @@ class Connection:
                 if filename.startswith("cu.usb")
             ]
         elif sys.platform == "win32":
-            import subprocess, re
+            import subprocess
+            import re
             mode_output = subprocess.check_output("mode", shell=True).decode()
             devices = [
                 re.search(r"(COM\d+):", line).groups()[0]
@@ -349,7 +351,8 @@ class Connection:
     def tcp(host: Optional[str] = "127.0.0.1", port: Optional[int] = 33333, **kwargs) -> "Connection":
         """Create Thymio object with a TCP connection.
         """
-        import socket, io
+        import socket
+        import io
 
         class TCPClientIO(io.RawIOBase):
 
@@ -473,6 +476,7 @@ class Connection:
                 if len(remote_node.named_variables) >= remote_node.num_named_var:
                     # all variables are known, can start refreshing
                     remote_node.reset_var_data()
+
                     async def do_refresh():
                         while not self.shutting_down:
                             try:
@@ -505,6 +509,7 @@ class Connection:
                                     del self.remote_nodes[node_id]
                             except asyncio.CancelledError:
                                 break
+
                     self.tasks.add(self.loop.create_task(do_refresh()))
         elif msg.id == Message.ID_VARIABLES:
             with self.input_lock:

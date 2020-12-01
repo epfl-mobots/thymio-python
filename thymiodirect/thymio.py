@@ -31,7 +31,7 @@ class Thymio:
         functions from asyncio coroutines.
         """
 
-        def __init__(self, thymio: "thymio.Thymio"):
+        def __init__(self, thymio: "Thymio"):
             """
             Construct a new __ThymioProxy object.
 
@@ -190,12 +190,14 @@ class Thymio:
         class Node:
             def __init__(self_node, node_id):
                 self_node.node_id = node_id
+
             def __getitem__(self_node, name):
                 try:
                     val = self.thymio_proxy.connection.get_var_array(self_node.node_id, name)
                     return val if len(val) != 1 else val[0]
                 except KeyError:
                     raise KeyError(name)
+
             def __setitem__(self_node, name, val):
                 try:
                     if isinstance(val, list):

@@ -166,7 +166,7 @@ class Assembler:
                 minus = False
                 offset = 0
                 while offset < len(a):
-                    r = re.match("(\+|-|[._a-z0-9]+)", a[offset:], re.I)
+                    r = re.match(r"(\+|-|[._a-z0-9]+)", a[offset:], re.I)
                     if r is None:
                         raise Exception("Syntax error")
                     s = r.group()
@@ -277,7 +277,7 @@ class Assembler:
             return [0xa100 | (test_instr["code"][0] & 0xff), (arg - pc) & 0xffff]
 
         @def_to_code("dont.jump.when.not")
-        def to_code_do_jump_when_not(pc, args, label, defs, phase, line):
+        def to_code_dont_jump_when_not(pc, args, label, defs, phase, line):
             test_instr = self.instr[args[0]] if args[0] in self.instr else None
             if (test_instr is None
                 or "code" not in test_instr
@@ -396,6 +396,7 @@ class Assembler:
                 raise Exception(f"Syntax error (line {i+1})")
 
         return bytecode
+
 
 def test(remote_node=None):
     if remote_node is None:

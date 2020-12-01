@@ -9,6 +9,7 @@
 
 import uuid
 
+
 class Message:
     """Aseba message data.
     """
@@ -240,7 +241,7 @@ class Message:
                 Message.ID_GET_CHANGED_VARIABLES: "ID_GET_CHANGED_VARIABLES",
                 Message.ID_GET_NODE_DESCRIPTION_FRAGMENT: "ID_GET_NODE_DESCRIPTION_FRAGMENT",
             }[id]
-        except KeyError as error:
+        except KeyError:
             return f"ID {id}"
 
     def __str__(self):
