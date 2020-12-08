@@ -561,7 +561,7 @@ class Connection:
             except Exception as error:
                 self.comm_error = error
                 if self.on_comm_error:
-                    self.on_comm_error(error)
+                    self.on_comm_error("write: " + error)
                 raise error
 
     def get_target_node_var_total_size(self, target_node_id):

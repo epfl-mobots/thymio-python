@@ -85,22 +85,28 @@ class Thymio:
                 if self.thymio.on_comm_error is not None:
                     self.thymio.on_comm_error(error)
 
-            try:
-                if self.thymio.use_tcp:
-                    self.connection = Connection.tcp(host=self.thymio.host,
-                                                     port=self.thymio.tcp_port,
-                                                     discover_rate=self.thymio.discover_rate,
-                                                     refreshing_rate=self.thymio.refreshing_rate,
-                                                     refreshing_coverage=self.thymio.refreshing_coverage,
-                                                     loop=self.loop)
-                else:
-                    self.connection = Connection.serial(port=self.thymio.serial_port,
-                                                        discover_rate=self.thymio.discover_rate,
-                                                        refreshing_rate=self.thymio.refreshing_rate,
-                                                        refreshing_coverage=self.thymio.refreshing_coverage,
-                                                        loop=self.loop)
-            except Exception as error:
-                on_comm_error(error)
+            for iter in range(2):
+                try:
+                    if self.thymio.use_tcp:
+                        self.connection = Connection.tcp(host=self.thymio.host,
+                                                         port=self.thymio.tcp_port,
+                                                         discover_rate=self.thymio.discover_rate,
+                                                         refreshing_rate=self.thymio.refreshing_rate,
+                                                         refreshing_coverage=self.thymio.refreshing_coverage,
+                                                         loop=self.loop)
+                    else:
+                        self.connection = Connection.serial(port=self.thymio.serial_port,
+                                                            discover_rate=self.thymio.discover_rate,
+                                                            refreshing_rate=self.thymio.refreshing_rate,
+                                                            refreshing_coverage=self.thymio.refreshing_coverage,
+                                                            loop=self.loop)
+                    break
+                except Exception as error:
+                    if iter > 0:
+                        on_comm_error("open: " + error)
+                    else:
+                        # give some time if the connection was closed immediately before
+                        time.sleep(0.2)
 
             self.connection.on_connection_changed = on_connection_changed
             self.connection.on_variables_received = on_variables_received
