@@ -148,7 +148,7 @@ class Thymio:
         self.variable_observers = {}
         self.user_event_listeners = {}
 
-    def connect(self):
+    def connect(self, progress=None, delay=0.1):
         """Connect to Thymio or dongle.
         """
         def thymio_thread():
@@ -157,8 +157,11 @@ class Thymio:
             self.thymio_proxy.run()
         self.thread = threading.Thread(target=thymio_thread)
         self.thread.start()
+        if progress is None:
+            progress = lambda: None
         while self.thymio_proxy is None or len(self.thymio_proxy.nodes) == 0:
-            time.sleep(0.1)
+            progress()
+            time.sleep(delay)
 
     def disconnect(self):
         self.thymio_proxy.shutdown()
