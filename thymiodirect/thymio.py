@@ -103,7 +103,7 @@ class Thymio:
                     break
                 except Exception as error:
                     if iter > 0:
-                        on_comm_error("open: " + error)
+                        on_comm_error("open: " + str(error))
                     else:
                         # give some time if the connection was closed immediately before
                         time.sleep(0.2)
