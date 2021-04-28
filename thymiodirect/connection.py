@@ -208,7 +208,7 @@ class Connection:
         self.input_lock = threading.Lock()
         self.input_thread = InputThread(self.io,
                                         loop=self.loop,
-                                        handle_msg=lambda msg: self.handle_message(msg))
+                                        handle_msg=self.handle_message)
         self.input_thread.start()
 
         self.output_lock = threading.Lock()
