@@ -248,3 +248,12 @@ class Thymio:
         # run it
         self.thymio_proxy.connection.set_bytecode(node_id, bc)
         self.thymio_proxy.connection.run(node_id)
+
+    def device_names(self):
+        """Return a dict of node_id associated to their respective device name."""
+        return {node_id:self.thymio_proxy.connection.remote_nodes[node_id].device_name
+                for node_id in self.nodes()}
+
+    def device_name(self, node_id):
+        """Return the device name for the given node_id."""
+        return self.thymio_proxy.connection.remote_nodes[node_id].device_name
