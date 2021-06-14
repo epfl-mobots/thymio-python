@@ -208,7 +208,7 @@ class Connection:
         self.input_lock = threading.Lock()
         self.input_thread = InputThread(self.io,
                                         loop=self.loop,
-                                        handle_msg=lambda msg: self.handle_message(msg))
+                                        handle_msg=self.handle_message)
         self.input_thread.start()
 
         self.output_lock = threading.Lock()
@@ -561,7 +561,7 @@ class Connection:
             except Exception as error:
                 self.comm_error = error
                 if self.on_comm_error:
-                    self.on_comm_error("write: " + error)
+                    self.on_comm_error("write: " + str(error))
                 raise error
 
     def get_target_node_var_total_size(self, target_node_id):

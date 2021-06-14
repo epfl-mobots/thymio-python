@@ -1,0 +1,7 @@
+# Compiled files
+__pycache__/
+
+# Distribution files
+/build/
+/dist/
+thymiodirect.egg-info/
