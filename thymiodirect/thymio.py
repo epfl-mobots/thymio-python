@@ -103,7 +103,7 @@ class Thymio:
                     break
                 except Exception as error:
                     if iter > 0:
-                        on_comm_error("open: " + error)
+                        on_comm_error("open: " + str(error))
                     else:
                         # give some time if the connection was closed immediately before
                         time.sleep(0.2)
@@ -148,7 +148,7 @@ class Thymio:
         self.variable_observers = {}
         self.user_event_listeners = {}
 
-    def connect(self):
+    def connect(self, progress=None, delay=0.1):
         """Connect to Thymio or dongle.
         """
         def thymio_thread():
@@ -157,12 +157,14 @@ class Thymio:
             self.thymio_proxy.run()
         self.thread = threading.Thread(target=thymio_thread)
         self.thread.start()
+        if progress is None:
+            progress = lambda: None
         while self.thymio_proxy is None or len(self.thymio_proxy.nodes) == 0:
-            time.sleep(0.1)
+            progress()
+            time.sleep(delay)
 
     def disconnect(self):
         self.thymio_proxy.shutdown()
-        self.thymio_proxy.connection.shutdown()
 
     def nodes(self):
         """Get set of ids of node currentlty connected.
@@ -246,3 +248,12 @@ class Thymio:
         # run it
         self.thymio_proxy.connection.set_bytecode(node_id, bc)
         self.thymio_proxy.connection.run(node_id)
+
+    def device_names(self):
+        """Return a dict of node_id associated to their respective device name."""
+        return {node_id:self.thymio_proxy.connection.remote_nodes[node_id].device_name
+                for node_id in self.nodes()}
+
+    def device_name(self, node_id):
+        """Return the device name for the given node_id."""
+        return self.thymio_proxy.connection.remote_nodes[node_id].device_name
