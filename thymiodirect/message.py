@@ -76,6 +76,14 @@ class Message:
         """
         return self.payload[offset] + 256 * self.payload[offset + 1], offset + 2
 
+    def get_int16(self, offset):
+        """Get a signed 16-bit integer in the payload.
+        """
+        v = self.payload[offset] + 256 * self.payload[offset + 1]
+        if v >= 32768:
+            v -= 65536
+        return v, offset + 2
+
     def get_string(self, offset):
         """Get a string in the payload.
         """
@@ -131,7 +139,7 @@ class Message:
             self.var_offset, offset = self.get_uint16(0)
             self.var_data = []
             for i in range(len(self.payload) // 2 - 1):
-                word, offset = self.get_uint16(offset)
+                word, offset = self.get_int16(offset)
                 self.var_data.append(word)
         elif self.id == Message.ID_EXECUTION_STATE_CHANGED:
             self.pc, offset = self.get_uint16(0)
